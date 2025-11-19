@@ -14,7 +14,7 @@ const updateSchema = z.object({
 // PATCH /api/splits/exercises/[id] - Update exercise in split day
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -22,7 +22,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const splitDayExerciseId = params.id;
+    const { id: splitDayExerciseId } = await params;
 
     // Verify the split day exercise belongs to the user
     const splitDayExercise = await prisma.splitDayExercise.findUnique({
@@ -82,7 +82,7 @@ export async function PATCH(
 // DELETE /api/splits/exercises/[id] - Delete specific split day exercise
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -90,7 +90,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const splitDayExerciseId = params.id;
+    const { id: splitDayExerciseId } = await params;
 
     // Verify the split day exercise belongs to the user
     const splitDayExercise = await prisma.splitDayExercise.findUnique({

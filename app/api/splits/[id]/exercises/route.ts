@@ -15,7 +15,7 @@ const exerciseSchema = z.object({
 // GET /api/splits/[id]/exercises - Get exercises for a split day
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -23,7 +23,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const splitDayId = params.id;
+    const { id: splitDayId } = await params;
 
     // Verify the split day belongs to the user
     const splitDay = await prisma.splitDay.findUnique({
@@ -33,7 +33,7 @@ export async function GET(
       },
     });
 
-    if (!splitDay || splitDay.workoutSplit.userId !== user.id) {
+    if (!splitDay || splitDay.workoutSplit.userId !== session.user.id) {
       return NextResponse.json({ error: "Split day not found" }, { status: 404 });
     }
 
@@ -67,7 +67,7 @@ export async function GET(
 // POST /api/splits/[id]/exercises - Add exercise to split day
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -75,7 +75,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const splitDayId = params.id;
+    const { id: splitDayId } = await params;
 
     // Verify the split day belongs to the user
     const splitDay = await prisma.splitDay.findUnique({
@@ -139,7 +139,7 @@ export async function POST(
 // DELETE /api/splits/[id]/exercises - Remove exercise from split day
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -157,7 +157,7 @@ export async function DELETE(
       );
     }
 
-    const splitDayId = params.id;
+    const { id: splitDayId } = await params;
 
     // Verify the split day belongs to the user
     const splitDay = await prisma.splitDay.findUnique({

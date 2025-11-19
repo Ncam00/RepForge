@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { Plus, Trash2, Search, Dumbbell } from "lucide-react"
+import { Plus, Trash2, Search, Dumbbell, Heart, Video, Tag, TrendingUp } from "lucide-react"
 
 type Exercise = {
   id: string
@@ -19,6 +19,9 @@ type Exercise = {
   instructions?: string | null
   tips?: string | null
   isPublic: boolean
+  isFavorite: boolean
+  category?: string | null
+  variations?: string[] | null
 }
 
 const MUSCLE_GROUPS = [
@@ -28,12 +31,16 @@ const MUSCLE_GROUPS = [
 
 const DIFFICULTIES = ["beginner", "intermediate", "advanced"]
 
+const CATEGORIES = ["compound", "isolation", "cardio", "flexibility", "plyometric"]
+
 export default function ExercisesPage() {
   const queryClient = useQueryClient()
   const [isCreating, setIsCreating] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterMuscle, setFilterMuscle] = useState("")
   const [filterDifficulty, setFilterDifficulty] = useState("")
+  const [filterCategory, setFilterCategory] = useState("")
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null)
 
   // Form state
@@ -43,29 +50,40 @@ export default function ExercisesPage() {
   const [selectedMuscles, setSelectedMuscles] = useState<string[]>([])
   const [equipment, setEquipment] = useState("")
   const [difficulty, setDifficulty] = useState<"beginner" | "intermediate" | "advanced">("beginner")
+  const [category, setCategory] = useState<string>("")
   const [instructions, setInstructions] = useState("")
   const [tips, setTips] = useState("")
 
   const { data, isLoading } = useQuery({
-    queryKey: ["exercises", filterMuscle, filterDifficulty, searchTerm],
+    queryKey: ["exercises", filterMuscle, filterDifficulty, filterCategory, searchTerm, showFavoritesOnly],
     queryFn: async () => {
       const params = new URLSearchParams()
       if (filterMuscle) params.append("muscleGroup", filterMuscle)
       if (filterDifficulty) params.append("difficulty", filterDifficulty)
+      if (filterCategory) params.append("category", filterCategory)
       if (searchTerm) params.append("search", searchTerm)
 
       const res = await fetch(`/api/exercises?${params}`)
       if (!res.ok) throw new Error("Failed to fetch exercises")
-      return res.json()
+      const data = await res.json()
+      
+      // Filter favorites on client side
+      if (showFavoritesOnly) {
+        return {
+          exercises: data.exercises.filter((ex: Exercise) => ex.isFavorite)
+        }
+      }
+      
+      return data
     },
   })
 
   const createExerciseMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (exerciseData: any) => {
       const res = await fetch("/api/exercises", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(exerciseData),
       })
       if (!res.ok) throw new Error("Failed to create exercise")
       return res.json()
@@ -74,6 +92,19 @@ export default function ExercisesPage() {
       queryClient.invalidateQueries({ queryKey: ["exercises"] })
       resetForm()
       setIsCreating(false)
+    },
+  })
+
+  const toggleFavoriteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/exercises/${id}/favorite`, {
+        method: "PATCH",
+      })
+      if (!res.ok) throw new Error("Failed to toggle favorite")
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["exercises"] })
     },
   })
 
@@ -97,6 +128,7 @@ export default function ExercisesPage() {
     setSelectedMuscles([])
     setEquipment("")
     setDifficulty("beginner")
+    setCategory("")
     setInstructions("")
     setTips("")
   }
@@ -111,6 +143,7 @@ export default function ExercisesPage() {
       muscleGroups: selectedMuscles,
       equipment: equipment || undefined,
       difficulty,
+      category: category || undefined,
       instructions: instructions || undefined,
       tips: tips || undefined,
       isPublic: false,
@@ -197,20 +230,38 @@ export default function ExercisesPage() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="ex-difficulty">Difficulty</Label>
-              <select
-                id="ex-difficulty"
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                value={difficulty}
-                onChange={(e) => setDifficulty(e.target.value as any)}
-              >
-                {DIFFICULTIES.map((diff) => (
-                  <option key={diff} value={diff}>
-                    {diff.charAt(0).toUpperCase() + diff.slice(1)}
-                  </option>
-                ))}
-              </select>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="ex-difficulty">Difficulty</Label>
+                <select
+                  id="ex-difficulty"
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                  value={difficulty}
+                  onChange={(e) => setDifficulty(e.target.value as any)}
+                >
+                  {DIFFICULTIES.map((diff) => (
+                    <option key={diff} value={diff}>
+                      {diff.charAt(0).toUpperCase() + diff.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ex-category">Category</Label>
+                <select
+                  id="ex-category"
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                >
+                  <option value="">Select category...</option>
+                  {CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -269,10 +320,20 @@ export default function ExercisesPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Filters</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Filters</CardTitle>
+            <Button
+              variant={showFavoritesOnly ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+            >
+              <Heart className={`mr-2 h-4 w-4 ${showFavoritesOnly ? "fill-current" : ""}`} />
+              {showFavoritesOnly ? "All Exercises" : "Favorites Only"}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-4">
             <div className="space-y-2">
               <Label htmlFor="search">Search</Label>
               <div className="relative">
@@ -318,6 +379,22 @@ export default function ExercisesPage() {
                 ))}
               </select>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="category-filter">Category</Label>
+              <select
+                id="category-filter"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+              >
+                <option value="">All</option>
+                {CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -329,34 +406,41 @@ export default function ExercisesPage() {
           <CardContent className="py-12 text-center">
             <Dumbbell className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <p className="text-muted-foreground">
-              No exercises found. Try adjusting your filters or add a new exercise.
+              {showFavoritesOnly 
+                ? "No favorite exercises yet. Star some exercises to see them here!"
+                : "No exercises found. Try adjusting your filters or add a new exercise."}
             </p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {exercises.map((exercise) => (
-            <Card key={exercise.id} className="hover:shadow-lg transition-shadow">
+            <Card key={exercise.id} className="hover:shadow-lg transition-shadow relative">
+              <div className="absolute top-2 right-2 z-10">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => toggleFavoriteMutation.mutate(exercise.id)}
+                >
+                  <Heart className={`h-4 w-4 ${exercise.isFavorite ? "fill-red-500 text-red-500" : ""}`} />
+                </Button>
+              </div>
               <CardHeader>
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between pr-8">
                   <div className="flex-1">
-                    <CardTitle className="text-lg">{exercise.name}</CardTitle>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      {exercise.name}
+                      {exercise.videoUrl && (
+                        <Video className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </CardTitle>
                     {exercise.description && (
                       <CardDescription className="mt-1">
                         {exercise.description}
                       </CardDescription>
                     )}
                   </div>
-                  {!exercise.isPublic && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => deleteExerciseMutation.mutate(exercise.id)}
-                      disabled={deleteExerciseMutation.isPending}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -374,46 +458,64 @@ export default function ExercisesPage() {
                   </div>
                 </div>
 
-                {exercise.equipment && (
-                  <div className="text-sm">
-                    <span className="font-medium">Equipment:</span> {exercise.equipment}
-                  </div>
-                )}
-
-                {exercise.difficulty && (
-                  <div className="text-sm">
-                    <span className="font-medium">Difficulty:</span>{" "}
-                    <span className={`
+                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                  {exercise.equipment && (
+                    <span className="flex items-center gap-1">
+                      <Dumbbell className="h-3 w-3" />
+                      {exercise.equipment}
+                    </span>
+                  )}
+                  {exercise.category && (
+                    <span className="flex items-center gap-1">
+                      <Tag className="h-3 w-3" />
+                      {exercise.category}
+                    </span>
+                  )}
+                  {exercise.difficulty && (
+                    <span className={`flex items-center gap-1
                       ${exercise.difficulty === "beginner" ? "text-green-600" : ""}
                       ${exercise.difficulty === "intermediate" ? "text-yellow-600" : ""}
                       ${exercise.difficulty === "advanced" ? "text-red-600" : ""}
                     `}>
-                      {exercise.difficulty.charAt(0).toUpperCase() + exercise.difficulty.slice(1)}
+                      <TrendingUp className="h-3 w-3" />
+                      {exercise.difficulty}
                     </span>
-                  </div>
-                )}
+                  )}
+                </div>
 
-                {exercise.videoUrl && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={() => window.open(exercise.videoUrl!, "_blank")}
-                  >
-                    Watch Demo
-                  </Button>
-                )}
-
-                {(exercise.instructions || exercise.tips) && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={() => setSelectedExercise(exercise)}
-                  >
-                    View Details
-                  </Button>
-                )}
+                <div className="flex gap-2">
+                  {exercise.videoUrl && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => window.open(exercise.videoUrl!, "_blank")}
+                    >
+                      <Video className="h-3 w-3 mr-1" />
+                      Demo
+                    </Button>
+                  )}
+                  {(exercise.instructions || exercise.tips) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => setSelectedExercise(exercise)}
+                    >
+                      Details
+                    </Button>
+                  )}
+                  {!exercise.isPublic && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteExerciseMutation.mutate(exercise.id)}
+                      disabled={deleteExerciseMutation.isPending}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -430,6 +532,18 @@ export default function ExercisesPage() {
               )}
             </CardHeader>
             <CardContent className="space-y-4">
+              {selectedExercise.videoUrl && (
+                <div>
+                  <h3 className="font-semibold mb-2">Video Demonstration</h3>
+                  <Button
+                    variant="outline"
+                    onClick={() => window.open(selectedExercise.videoUrl!, "_blank")}
+                  >
+                    <Video className="mr-2 h-4 w-4" />
+                    Watch Video
+                  </Button>
+                </div>
+              )}
               {selectedExercise.instructions && (
                 <div>
                   <h3 className="font-semibold mb-2">Instructions</h3>

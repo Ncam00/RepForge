@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts"
 import { format, subDays, subMonths, differenceInDays } from "date-fns"
-import { Plus, Trash2, Download, Target, TrendingUp, TrendingDown, Camera } from "lucide-react"
+import { Plus, Trash2, Download, Target, TrendingUp, TrendingDown, Camera, Image as ImageIcon, X } from "lucide-react"
 
 type Weight = {
   id: string
@@ -39,6 +39,7 @@ export default function WeightPage() {
   const [unit, setUnit] = useState<"kg" | "lbs">("kg")
   const [notes, setNotes] = useState("")
   const [photoUrl, setPhotoUrl] = useState("")
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [dateRange, setDateRange] = useState<"7d" | "30d" | "90d" | "all">("30d")
   const [showGoalForm, setShowGoalForm] = useState(false)
   const [targetWeight, setTargetWeight] = useState("")
@@ -113,6 +114,45 @@ export default function WeightPage() {
       queryClient.invalidateQueries({ queryKey: ["weights"] })
     },
   })
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Photo must be less than 5MB")
+      return
+    }
+
+    // Check file type
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file")
+      return
+    }
+
+    setUploadingPhoto(true)
+
+    try {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setPhotoUrl(reader.result as string)
+        setUploadingPhoto(false)
+      }
+      reader.onerror = () => {
+        alert("Failed to read photo")
+        setUploadingPhoto(false)
+      }
+      reader.readAsDataURL(file)
+    } catch (error) {
+      alert("Failed to upload photo")
+      setUploadingPhoto(false)
+    }
+  }
+
+  const handleRemovePhoto = () => {
+    setPhotoUrl("")
+  }
 
   const handleAddWeight = () => {
     const weight = parseFloat(newWeight)
@@ -463,21 +503,57 @@ export default function WeightPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="photoUrl">Photo URL (Optional)</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="photoUrl"
-                  type="url"
-                  placeholder="https://..."
-                  value={photoUrl}
-                  onChange={(e) => setPhotoUrl(e.target.value)}
-                />
-                {photoUrl && (
-                  <Button variant="outline" size="icon" onClick={() => window.open(photoUrl, "_blank")}>
-                    <Camera className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
+              <Label htmlFor="photo">Progress Photo (Optional)</Label>
+              {!photoUrl ? (
+                <div>
+                  <input
+                    type="file"
+                    id="photo"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handlePhotoUpload}
+                    className="hidden"
+                    disabled={uploadingPhoto}
+                  />
+                  <label htmlFor="photo">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      disabled={uploadingPhoto}
+                      onClick={() => document.getElementById("photo")?.click()}
+                    >
+                      {uploadingPhoto ? (
+                        <>Loading...</>
+                      ) : (
+                        <>
+                          <Camera className="mr-2 h-4 w-4" />
+                          Take Photo / Upload
+                        </>
+                      )}
+                    </Button>
+                  </label>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="relative border rounded-lg overflow-hidden">
+                    <img
+                      src={photoUrl}
+                      alt="Progress"
+                      className="w-full h-48 object-cover"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2"
+                      onClick={handleRemovePhoto}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           <Button
@@ -583,17 +659,26 @@ export default function WeightPage() {
                           <span className="text-muted-foreground">MM:</span> {weight.muscleMass} {weight.unit}
                         </div>
                       )}
-                      {weight.photoUrl && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => window.open(weight.photoUrl!, "_blank")}
-                        >
-                          <Camera className="h-4 w-4 mr-1" />
-                          Photo
-                        </Button>
-                      )}
                     </div>
+                    {weight.photoUrl && (
+                      <div className="mt-2">
+                        <img
+                          src={weight.photoUrl}
+                          alt="Progress photo"
+                          className="w-32 h-32 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => {
+                            const modal = document.createElement("div")
+                            modal.className = "fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+                            modal.onclick = () => modal.remove()
+                            const img = document.createElement("img")
+                            img.src = weight.photoUrl!
+                            img.className = "max-w-full max-h-full object-contain"
+                            modal.appendChild(img)
+                            document.body.appendChild(modal)
+                          }}
+                        />
+                      </div>
+                    )}
                     {weight.notes && (
                       <div className="text-sm text-muted-foreground mt-1">
                         {weight.notes}

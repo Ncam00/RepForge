@@ -20,6 +20,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
     { href: "/dashboard", label: "Overview", icon: Dumbbell },
     { href: "/dashboard/weight", label: "Weight", icon: TrendingUp },
     { href: "/dashboard/splits", label: "Splits", icon: Library },
+    { href: "/dashboard/exercises", label: "Exercises", icon: Dumbbell },
     { href: "/dashboard/history", label: "History", icon: History },
   ]
 

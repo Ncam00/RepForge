@@ -1,0 +1,169 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  weights       Weight[]
+  workoutSplits WorkoutSplit[]
+  sessions      WorkoutSession[]
+  exercises     Exercise[]
+  personalRecords PersonalRecord[]
+  
+  @@map("users")
+}
+
+model Weight {
+  id        String   @id @default(cuid())
+  userId    String
+  weight    Float
+  unit      String   @default("kg") // kg or lbs
+  date      DateTime @default(now())
+  notes     String?
+  createdAt DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, date])
+  @@map("weights")
+}
+
+model WorkoutSplit {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  isActive    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  days     SplitDay[]
+  
+  @@index([userId])
+  @@map("workout_splits")
+}
+
+model SplitDay {
+  id             String   @id @default(cuid())
+  workoutSplitId String
+  dayOfWeek      Int      // 0-6 (Sunday-Saturday)
+  name           String   // e.g., "Push", "Pull", "Legs"
+  description    String?
+  order          Int      @default(0)
+  
+  workoutSplit WorkoutSplit      @relation(fields: [workoutSplitId], references: [id], onDelete: Cascade)
+  exercises    SplitDayExercise[]
+  
+  @@index([workoutSplitId])
+  @@map("split_days")
+}
+
+model Exercise {
+  id              String   @id @default(cuid())
+  userId          String?  // null for system exercises
+  name            String
+  description     String?
+  videoUrl        String?
+  muscleGroups    String   // JSON array of muscle groups
+  equipment       String?
+  difficulty      String?  // beginner, intermediate, advanced
+  instructions    String?
+  tips            String?
+  isPublic        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  user              User?               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  splitDayExercises SplitDayExercise[]
+  sets              ExerciseSet[]
+  personalRecords   PersonalRecord[]
+  
+  @@index([userId])
+  @@index([muscleGroups])
+  @@map("exercises")
+}
+
+model SplitDayExercise {
+  id          String @id @default(cuid())
+  splitDayId  String
+  exerciseId  String
+  order       Int    @default(0)
+  targetSets  Int?
+  targetReps  String? // e.g., "8-12" or "10"
+  restTime    Int?    // seconds
+  notes       String?
+  
+  splitDay  SplitDay @relation(fields: [splitDayId], references: [id], onDelete: Cascade)
+  exercise  Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  
+  @@index([splitDayId])
+  @@index([exerciseId])
+  @@map("split_day_exercises")
+}
+
+model WorkoutSession {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String?
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+  duration    Int?     // minutes
+  notes       String?
+  mood        String?  // good, average, poor
+  energyLevel Int?     // 1-10
+  
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sets ExerciseSet[]
+  
+  @@index([userId, startedAt])
+  @@map("workout_sessions")
+}
+
+model ExerciseSet {
+  id               String   @id @default(cuid())
+  workoutSessionId String
+  exerciseId       String
+  setNumber        Int
+  weight           Float?
+  reps             Int?
+  rpe              Float?   // Rate of Perceived Exertion (1-10)
+  restTime         Int?     // seconds
+  isWarmup         Boolean  @default(false)
+  notes            String?
+  completedAt      DateTime @default(now())
+  
+  session  WorkoutSession @relation(fields: [workoutSessionId], references: [id], onDelete: Cascade)
+  exercise Exercise       @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  
+  @@index([workoutSessionId])
+  @@index([exerciseId])
+  @@map("exercise_sets")
+}
+
+model PersonalRecord {
+  id         String   @id @default(cuid())
+  userId     String
+  exerciseId String
+  recordType String   // one_rep_max, max_volume, max_reps
+  value      Float
+  date       DateTime @default(now())
+  notes      String?
+  
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, exerciseId])
+  @@map("personal_records")
+}

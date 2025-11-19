@@ -1,6 +1,5 @@
 # RepForge
-Fitness App
-# Fitness App
+A modern fitness tracker built to forge progress, one rep at a time.
 
 ## Overview
 

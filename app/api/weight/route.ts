@@ -6,8 +6,11 @@ import { z } from "zod"
 const weightSchema = z.object({
   weight: z.number().positive(),
   unit: z.enum(["kg", "lbs"]),
+  bodyFat: z.number().min(0).max(100).optional(),
+  muscleMass: z.number().positive().optional(),
   date: z.string().datetime().optional(),
   notes: z.string().optional(),
+  photoUrl: z.string().url().optional(),
 })
 
 export async function GET(req: Request) {
@@ -61,8 +64,11 @@ export async function POST(req: Request) {
         userId: session.user.id,
         weight: data.weight,
         unit: data.unit,
+        bodyFat: data.bodyFat,
+        muscleMass: data.muscleMass,
         date: data.date ? new Date(data.date) : new Date(),
         notes: data.notes,
+        photoUrl: data.photoUrl,
       },
     })
 

@@ -16,6 +16,7 @@ model User {
   updatedAt     DateTime  @updatedAt
   
   weights       Weight[]
+  weightGoal    WeightGoal?
   workoutSplits WorkoutSplit[]
   sessions      WorkoutSession[]
   exercises     Exercise[]
@@ -25,18 +26,38 @@ model User {
 }
 
 model Weight {
-  id        String   @id @default(cuid())
-  userId    String
-  weight    Float
-  unit      String   @default("kg") // kg or lbs
-  date      DateTime @default(now())
-  notes     String?
-  createdAt DateTime @default(now())
+  id           String   @id @default(cuid())
+  userId       String
+  weight       Float
+  unit         String   @default("kg") // kg or lbs
+  bodyFat      Float?   // body fat percentage
+  muscleMass   Float?   // muscle mass in kg or lbs
+  date         DateTime @default(now())
+  notes        String?
+  photoUrl     String?  // progress photo
+  createdAt    DateTime @default(now())
   
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   @@index([userId, date])
   @@map("weights")
+}
+
+model WeightGoal {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  targetWeight    Float
+  unit            String   @default("kg")
+  targetDate      DateTime?
+  startWeight     Float
+  startDate       DateTime @default(now())
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("weight_goals")
 }
 
 model WorkoutSplit {
@@ -82,6 +103,9 @@ model Exercise {
   instructions    String?
   tips            String?
   isPublic        Boolean  @default(false)
+  isFavorite      Boolean  @default(false)
+  category        String?  // compound, isolation, cardio, etc.
+  variations      String?  // JSON array of variation exercise IDs
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   

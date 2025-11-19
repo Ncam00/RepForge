@@ -89,16 +89,16 @@ A fitness application designed to streamline training, track progress, and visua
 
 ## Roadmap
 
-| Feature                          | Description                    | Priority | Version |
-| -------------------------------- | ------------------------------ | -------- | ------- |
-| Weight Tracking                  | Graphs, comparisons, analytics | High     | v1.0    |
-| Training Splits                  | Customizable routines          | High     | v1.0    |
-| Exercise Library                 | Videos, muscles, tips          | High     | v1.1    |
-| Session History                  | Past session comparisons       | High     | v1.1    |
-| PR Tracking                      | Auto PR detection              | Medium   | v1.2    |
-| Progressive Overload Suggestions | Smart recommendations          | Medium   | v1.3    |
-| Nutrition Tracking               | Meals, macros                  | Low      | v2.0    |
-| Community Challenges             | Social features                | Low      | v2.1    |
+| Feature                          | Description                    | Priority | Version | Status       |
+| -------------------------------- | ------------------------------ | -------- | ------- | ------------ |
+| Weight Tracking                  | Graphs, comparisons, analytics | High     | v1.0    | ✅ Complete  |
+| Training Splits                  | Customizable routines          | High     | v1.0    | ✅ Complete  |
+| Exercise Library                 | Videos, muscles, tips          | High     | v1.1    | ✅ Complete  |
+| Session History                  | Past session comparisons       | High     | v1.1    | 🚧 In Progress |
+| PR Tracking                      | Auto PR detection              | Medium   | v1.2    | 📋 Planned   |
+| Progressive Overload Suggestions | Smart recommendations          | Medium   | v1.3    | 📋 Planned   |
+| Nutrition Tracking               | Meals, macros                  | Low      | v2.0    | 📋 Planned   |
+| Community Challenges             | Social features                | Low      | v2.1    | 📋 Planned   |
 
 * Add nutrition tracking.
 * Include community challenges.

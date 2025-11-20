@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Dumbbell, TrendingUp, Library, History, LogOut, Settings } from "lucide-react"
+import { Dumbbell, TrendingUp, Library, History, LogOut, Settings, BookTemplate } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -21,6 +21,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
     { href: "/dashboard/weight", label: "Weight", icon: TrendingUp },
     { href: "/dashboard/splits", label: "Splits", icon: Library },
     { href: "/dashboard/exercises", label: "Exercises", icon: Dumbbell },
+    { href: "/dashboard/templates", label: "Templates", icon: BookTemplate },
     { href: "/dashboard/history", label: "History", icon: History },
     { href: "/dashboard/settings", label: "Settings", icon: Settings },
   ]

@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { Plus, Trash2, Play, Square, Clock, Dumbbell, Timer, CheckCircle2 } from "lucide-react"
+import { Plus, Trash2, Play, Square, Clock, Dumbbell, Timer, CheckCircle2, Trophy } from "lucide-react"
 import { format } from "date-fns"
 
 type Exercise = {
@@ -110,6 +110,19 @@ function ActiveWorkout({ session }: { session: WorkoutSession }) {
       setRpe("")
       setNotes("")
       setIsWarmup(false)
+      
+      // Show PR celebration if any PRs were achieved
+      if (data.prResults) {
+        const prTypes = [];
+        if (data.prResults.oneRepMax) prTypes.push("1RM");
+        if (data.prResults.maxVolume) prTypes.push("Volume");
+        if (data.prResults.maxReps) prTypes.push("Reps");
+        
+        if (prTypes.length > 0) {
+          alert(`🏆 New PR! ${prTypes.join(", ")} - Great job!`);
+        }
+      }
+      
       // Start rest timer if a rest time was set
       if (data.set.restTime) {
         setRestTimerDuration(data.set.restTime)

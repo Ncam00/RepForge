@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import prisma from "@/lib/db";
 import { z } from "zod";
+import { checkAndUpdatePRs } from "@/app/api/prs/route";
 
 const setSchema = z.object({
   exerciseId: z.string(),
@@ -119,6 +120,17 @@ export async function POST(
       },
     });
 
+    // Check for PRs if not a warmup set and has weight and reps
+    let prResults = null;
+    if (!exerciseSet.isWarmup && exerciseSet.weight && exerciseSet.reps) {
+      prResults = await checkAndUpdatePRs(
+        session.user.id,
+        validatedData.exerciseId,
+        exerciseSet.weight,
+        exerciseSet.reps
+      );
+    }
+
     return NextResponse.json({
       set: {
         ...exerciseSet,
@@ -127,6 +139,7 @@ export async function POST(
           muscleGroups: JSON.parse(exerciseSet.exercise.muscleGroups),
         },
       },
+      prResults,
     }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {

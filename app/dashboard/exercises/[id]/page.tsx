@@ -22,8 +22,10 @@ import {
   Dumbbell,
   Calendar,
   BarChart3,
+  Video,
 } from "lucide-react";
 import Link from "next/link";
+import YouTubeEmbed from "@/components/YouTubeEmbed";
 
 export default function ExerciseStatsPage() {
   const params = useParams();
@@ -96,6 +98,36 @@ export default function ExerciseStatsPage() {
           </div>
         </div>
       </div>
+
+      {/* Video Tutorial Section */}
+      {exercise.videoUrl && (
+        <div className="bg-white p-6 rounded-lg border shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <Video className="w-5 h-5 text-blue-600" />
+            <h2 className="text-xl font-semibold">Exercise Tutorial</h2>
+          </div>
+          <div className="max-w-3xl">
+            <YouTubeEmbed
+              videoUrl={exercise.videoUrl}
+              title={`${exercise.name} demonstration`}
+            />
+          </div>
+          {exercise.instructions && (
+            <div className="mt-6 pt-6 border-t">
+              <h3 className="font-semibold mb-2">Instructions</h3>
+              <p className="text-gray-700 whitespace-pre-line">
+                {exercise.instructions}
+              </p>
+            </div>
+          )}
+          {exercise.tips && (
+            <div className="mt-4">
+              <h3 className="font-semibold mb-2">Tips</h3>
+              <p className="text-gray-700 whitespace-pre-line">{exercise.tips}</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

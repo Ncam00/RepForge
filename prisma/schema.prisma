@@ -23,6 +23,7 @@ model User {
   personalRecords PersonalRecord[]
   settings        UserSettings?
   templates       WorkoutTemplate[]
+  JournalEntry    JournalEntry[]
 
   @@map("users")
 }
@@ -247,4 +248,25 @@ model TemplateExercise {
   @@index([templateId])
   @@index([exerciseId])
   @@map("template_exercises")
+}
+
+model JournalEntry {
+  id           String   @id @default(cuid())
+  userId       String
+  date         DateTime @default(now())
+  title        String?
+  content      String?
+  mood         String? // great, good, okay, bad, terrible
+  energyLevel  Int? // 1-10
+  sleepQuality Int? // 1-10
+  bodyWeight   Float?
+  notes        String?
+  tags         String? // JSON array
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@map("journal_entries")
 }

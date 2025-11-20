@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { Plus, Trash2, Search, Dumbbell, Heart, Video, Tag, TrendingUp } from "lucide-react"
+import { Plus, Trash2, Search, Dumbbell, Heart, Video, Tag, TrendingUp, BarChart3 } from "lucide-react"
+import Link from "next/link"
 
 type Exercise = {
   id: string
@@ -484,6 +485,16 @@ export default function ExercisesPage() {
                 </div>
 
                 <div className="flex gap-2">
+                  <Link href={`/dashboard/exercises/${exercise.id}`} className="flex-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                    >
+                      <BarChart3 className="h-3 w-3 mr-1" />
+                      Stats
+                    </Button>
+                  </Link>
                   {exercise.videoUrl && (
                     <Button
                       variant="outline"

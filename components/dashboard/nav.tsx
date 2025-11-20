@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Dumbbell, TrendingUp, Library, History, LogOut, Settings, BookTemplate, BarChart3, Calendar, BookOpen } from "lucide-react"
+import { Dumbbell, TrendingUp, Library, History, LogOut, Settings, BookTemplate, BarChart3, Calendar, BookOpen, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -26,6 +26,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
     { href: "/dashboard/calendar", label: "Calendar", icon: Calendar },
     { href: "/dashboard/journal", label: "Journal", icon: BookOpen },
     { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
+    { href: "/dashboard/social", label: "Social", icon: Users },
     { href: "/dashboard/settings", label: "Settings", icon: Settings },
   ]
 

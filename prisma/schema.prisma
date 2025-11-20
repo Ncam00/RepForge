@@ -270,3 +270,86 @@ model JournalEntry {
   @@index([userId, date])
   @@map("journal_entries")
 }
+
+// Social Features
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String // User who is following
+  followingId String // User being followed
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+  @@map("follows")
+}
+
+model WorkoutShare {
+  id        String   @id @default(cuid())
+  userId    String
+  sessionId String
+  caption   String?
+  isPublic  Boolean  @default(true)
+  likes     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([isPublic, createdAt])
+  @@map("workout_shares")
+}
+
+model Like {
+  id      String   @id @default(cuid())
+  userId  String
+  shareId String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, shareId])
+  @@index([shareId])
+  @@map("likes")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  userId    String
+  shareId   String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([shareId])
+  @@index([userId])
+  @@map("comments")
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String // first_workout, 10_workouts, 100_workouts, pr_set, streak_7, etc.
+  title       String
+  description String
+  icon        String? // emoji or icon name
+  unlockedAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([type])
+  @@map("achievements")
+}
+
+model Leaderboard {
+  id        String   @id @default(cuid())
+  userId    String
+  category  String // total_volume, total_workouts, streak, etc.
+  value     Float
+  rank      Int?
+  period    String // weekly, monthly, all_time
+  startDate DateTime
+  endDate   DateTime
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, category, period, startDate])
+  @@index([category, period, value])
+  @@map("leaderboards")
+}

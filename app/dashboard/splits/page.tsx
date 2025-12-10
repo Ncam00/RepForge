@@ -270,11 +270,19 @@ function DayExerciseManager({ splitDayId }: { splitDayId: string }) {
               onChange={(e) => setSelectedExerciseId(e.target.value)}
             >
               <option value="">Choose an exercise...</option>
-              {availableExercises.map((ex) => (
-                <option key={ex.id} value={ex.id}>
-                  {ex.name} ({JSON.parse(ex.muscleGroups).join(", ")})
-                </option>
-              ))}
+              {availableExercises.map((ex) => {
+                let muscles = [];
+                try {
+                  muscles = JSON.parse(ex.muscleGroups);
+                } catch {
+                  muscles = [];
+                }
+                return (
+                  <option key={ex.id} value={ex.id}>
+                    {ex.name} {muscles.length > 0 ? `(${muscles.join(", ")})` : ""}
+                  </option>
+                );
+              })}
             </select>
           </div>
 

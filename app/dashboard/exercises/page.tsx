@@ -26,8 +26,8 @@ type Exercise = {
 }
 
 const MUSCLE_GROUPS = [
-  "chest", "back", "shoulders", "biceps", "triceps",
-  "quads", "hamstrings", "glutes", "calves", "abs", "traps"
+  "abs", "back", "biceps", "calves", "chest", "glutes",
+  "hamstrings", "quads", "shoulders", "traps", "triceps"
 ]
 
 const DIFFICULTIES = ["beginner", "intermediate", "advanced"]

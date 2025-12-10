@@ -8,6 +8,7 @@ import Link from "next/link"
 import { format, formatDistanceToNow } from "date-fns"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { useRouter } from "next/navigation"
+import XpProgress from "@/components/XpProgress"
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -34,6 +35,9 @@ export default function DashboardPage() {
           Welcome back! Track your progress and stay consistent.
         </p>
       </div>
+
+      {/* XP and Level Progress */}
+      <XpProgress />
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

@@ -353,3 +353,51 @@ model Leaderboard {
   @@index([category, period, value])
   @@map("leaderboards")
 }
+
+// Gamification System
+model UserProgress {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  xp              Int      @default(0)
+  level           Int      @default(1)
+  currentStreak   Int      @default(0)
+  longestStreak   Int      @default(0)
+  lastWorkoutDate DateTime?
+  totalXpEarned   Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("user_progress")
+}
+
+model XpTransaction {
+  id        String   @id @default(cuid())
+  userId    String
+  amount    Int
+  reason    String
+  source    String // workout_complete, pr_set, streak_bonus, challenge_complete
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("xp_transactions")
+}
+
+model Challenge {
+  id          String    @id @default(cuid())
+  userId      String
+  type        String // daily, weekly, custom
+  title       String
+  description String
+  target      Int
+  progress    Int       @default(0)
+  xpReward    Int
+  status      String    @default("active") // active, completed, expired
+  startDate   DateTime  @default(now())
+  endDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId, status])
+  @@map("challenges")
+}

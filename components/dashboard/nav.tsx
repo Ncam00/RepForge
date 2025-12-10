@@ -4,6 +4,8 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Dumbbell, TrendingUp, Library, History, LogOut, Settings, BookTemplate, BarChart3, Calendar, BookOpen, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import LevelBadge from "@/components/LevelBadge"
+import LevelBadge from "@/components/LevelBadge"
 import { cn } from "@/lib/utils"
 
 interface DashboardNavProps {
@@ -59,7 +61,9 @@ export function DashboardNav({ user }: DashboardNavProps) {
               })}
             </div>
           </div>
+            <LevelBadge />
           <div className="flex items-center gap-4">
+            <LevelBadge />
             <div className="text-sm">
               <div className="font-medium">{user.name || "User"}</div>
               <div className="text-muted-foreground">{user.email}</div>

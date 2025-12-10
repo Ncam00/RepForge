@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation"
 import { Dumbbell, TrendingUp, Library, History, LogOut, Settings, BookTemplate, BarChart3, Calendar, BookOpen, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import LevelBadge from "@/components/LevelBadge"
-import LevelBadge from "@/components/LevelBadge"
 import { cn } from "@/lib/utils"
 
 interface DashboardNavProps {

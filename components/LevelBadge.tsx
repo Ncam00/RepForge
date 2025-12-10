@@ -19,9 +19,9 @@ export default function LevelBadge() {
 
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 bg-white border rounded-lg shadow-sm">
-      <span className="text-lg">{badge.icon}</span>
+      <span className="text-lg" role="img" aria-label={`${badge.title} badge`}>{badge.icon}</span>
       <div className="flex flex-col">
-        <span className="text-xs text-gray-500">Level</span>
+        <span className="text-xs text-gray-700">Level</span>
         <span className="text-sm font-bold">{currentLevel}</span>
       </div>
     </div>

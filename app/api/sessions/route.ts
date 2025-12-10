@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import prisma from "@/lib/db";
 import { z } from "zod";
+import { awardXP, updateStreak, XP_REWARDS } from "@/lib/xp";
 
 const sessionSchema = z.object({
   name: z.string().optional(),
@@ -141,6 +142,8 @@ export async function PATCH(req: NextRequest) {
           (new Date().getTime() - existing.startedAt.getTime()) / 1000 / 60
         );
 
+    const isCompleting = !existing.completedAt;
+
     const updated = await prisma.workoutSession.update({
       where: { id: sessionId },
       data: {
@@ -152,7 +155,52 @@ export async function PATCH(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ session: updated });
+    // Award XP and update streak if completing workout
+    let xpResults = null;
+    if (isCompleting) {
+      // Update streak first to get bonus
+      const { streakBonus, currentStreak } = await updateStreak(session.user.id, prisma);
+      
+      // Award base workout XP
+      const workoutXP = await awardXP(
+        session.user.id,
+        XP_REWARDS.WORKOUT_COMPLETE,
+        "Completed workout",
+        "workout_complete",
+        prisma
+      );
+
+      // Award streak bonus if applicable
+      if (streakBonus > 0) {
+        const streakXP = await awardXP(
+          session.user.id,
+          streakBonus,
+          `${currentStreak} day streak bonus`,
+          "streak_bonus",
+          prisma
+        );
+        
+        xpResults = {
+          workoutXP: XP_REWARDS.WORKOUT_COMPLETE,
+          streakBonus,
+          currentStreak,
+          leveledUp: workoutXP.leveledUp || streakXP.leveledUp,
+          newLevel: streakXP.newLevel,
+          totalXp: streakXP.totalXp,
+        };
+      } else {
+        xpResults = {
+          workoutXP: XP_REWARDS.WORKOUT_COMPLETE,
+          streakBonus: 0,
+          currentStreak,
+          leveledUp: workoutXP.leveledUp,
+          newLevel: workoutXP.newLevel,
+          totalXp: workoutXP.totalXp,
+        };
+      }
+    }
+
+    return NextResponse.json({ session: updated, xpResults });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors }, { status: 400 });

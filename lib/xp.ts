@@ -81,3 +81,128 @@ export function calculateStreakBonus(streakDays: number): number {
   if (streakDays >= 7) return baseBonus * 1.5; // 7 day streak
   return baseBonus;
 }
+
+// Calculate streak based on last workout date
+export function calculateStreak(lastWorkoutDate: Date | null): { currentStreak: number; shouldContinue: boolean } {
+  if (!lastWorkoutDate) {
+    return { currentStreak: 1, shouldContinue: false };
+  }
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const lastWorkout = new Date(
+    lastWorkoutDate.getFullYear(),
+    lastWorkoutDate.getMonth(),
+    lastWorkoutDate.getDate()
+  );
+
+  const daysDiff = Math.floor((today.getTime() - lastWorkout.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (daysDiff === 0) {
+    // Worked out today already, continue streak
+    return { currentStreak: 0, shouldContinue: true };
+  } else if (daysDiff === 1) {
+    // Worked out yesterday, continue streak
+    return { currentStreak: 1, shouldContinue: true };
+  } else {
+    // Streak broken, start new streak
+    return { currentStreak: 1, shouldContinue: false };
+  }
+}
+
+// Award XP and update user progress
+export async function awardXP(
+  userId: string,
+  amount: number,
+  reason: string,
+  source: string,
+  prisma: any
+): Promise<{ leveledUp: boolean; newLevel: number; totalXp: number }> {
+  // Get or create user progress
+  let progress = await prisma.userProgress.findUnique({
+    where: { userId },
+  });
+
+  if (!progress) {
+    progress = await prisma.userProgress.create({
+      data: {
+        userId,
+        xp: 0,
+        level: 1,
+        currentStreak: 0,
+        longestStreak: 0,
+        totalXpEarned: 0,
+        lastWorkoutDate: null,
+      },
+    });
+  }
+
+  const oldLevel = progress.level;
+  const newXp = progress.xp + amount;
+  const newLevel = calculateLevel(newXp);
+  const leveledUp = newLevel > oldLevel;
+
+  // Update progress
+  await prisma.userProgress.update({
+    where: { userId },
+    data: {
+      xp: newXp,
+      level: newLevel,
+      totalXpEarned: progress.totalXpEarned + amount,
+    },
+  });
+
+  // Record transaction
+  await prisma.xpTransaction.create({
+    data: {
+      userId,
+      amount,
+      reason,
+      source,
+    },
+  });
+
+  return { leveledUp, newLevel, totalXp: newXp };
+}
+
+// Update streak when workout is completed
+export async function updateStreak(
+  userId: string,
+  prisma: any
+): Promise<{ streakBonus: number; currentStreak: number }> {
+  const progress = await prisma.userProgress.findUnique({
+    where: { userId },
+  });
+
+  if (!progress) {
+    return { streakBonus: 0, currentStreak: 0 };
+  }
+
+  const { currentStreak: streakIncrement, shouldContinue } = calculateStreak(progress.lastWorkoutDate);
+
+  let newStreak = progress.currentStreak;
+  
+  if (!shouldContinue) {
+    // Streak broken or new streak
+    newStreak = streakIncrement;
+  } else if (streakIncrement > 0) {
+    // Continue streak (worked out yesterday)
+    newStreak = progress.currentStreak + streakIncrement;
+  }
+  // If streakIncrement === 0, already worked out today, don't change streak
+
+  const longestStreak = Math.max(newStreak, progress.longestStreak);
+  const streakBonus = streakIncrement > 0 ? calculateStreakBonus(newStreak) : 0;
+
+  // Update progress with new streak and last workout date
+  await prisma.userProgress.update({
+    where: { userId },
+    data: {
+      currentStreak: newStreak,
+      longestStreak,
+      lastWorkoutDate: new Date(),
+    },
+  });
+
+  return { streakBonus: Math.floor(streakBonus), currentStreak: newStreak };
+}

@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import prisma from "@/lib/db";
 import { z } from "zod";
 import { checkAndUpdatePRs } from "@/app/api/prs/route";
+import { awardXP, XP_REWARDS } from "@/lib/xp";
 
 const setSchema = z.object({
   exerciseId: z.string(),
@@ -120,6 +121,18 @@ export async function POST(
       },
     });
 
+    // Award XP for completing a set (not warmup)
+    let xpResults = null;
+    if (!exerciseSet.isWarmup) {
+      xpResults = await awardXP(
+        session.user.id,
+        XP_REWARDS.SET_COMPLETE,
+        `Completed set for ${exerciseSet.exercise.name}`,
+        "set_complete",
+        prisma
+      );
+    }
+
     // Check for PRs if not a warmup set and has weight and reps
     let prResults = null;
     if (!exerciseSet.isWarmup && exerciseSet.weight && exerciseSet.reps) {
@@ -129,6 +142,25 @@ export async function POST(
         exerciseSet.weight,
         exerciseSet.reps
       );
+
+      // Award PR XP if new PR was set
+      if (prResults && (prResults.newOneRepMax || prResults.newVolumeRecord)) {
+        const prXP = await awardXP(
+          session.user.id,
+          XP_REWARDS.PR_SET,
+          `New PR on ${exerciseSet.exercise.name}`,
+          "personal_record",
+          prisma
+        );
+        
+        xpResults = xpResults ? {
+          ...xpResults,
+          prBonus: XP_REWARDS.PR_SET,
+          leveledUp: xpResults.leveledUp || prXP.leveledUp,
+          newLevel: prXP.newLevel,
+          totalXp: prXP.totalXp,
+        } : prXP;
+      }
     }
 
     return NextResponse.json({
@@ -140,6 +172,7 @@ export async function POST(
         },
       },
       prResults,
+      xpResults,
     }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {

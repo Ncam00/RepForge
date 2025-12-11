@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 
+import { auth } from "@/auth";
+import prisma from "@/lib/db";
 // Define available achievements
 const ALL_ACHIEVEMENTS = [
   { type: "first_workout", title: "First Step", description: "Complete your first workout", icon: "🎯" },
@@ -14,23 +13,19 @@ const ALL_ACHIEVEMENTS = [
   { type: "pr_set", title: "Record Breaker", description: "Set a personal record", icon: "🏆" },
   { type: "total_volume_100k", title: "Heavy Lifter", description: "Lift 100,000 lbs total volume", icon: "🏋️" },
 ];
-
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
     // Get user's unlocked achievements
     const unlocked = await prisma.achievement.findMany({
       where: { userId: session.user.id },
       orderBy: { unlockedAt: "desc" },
     });
-
     const unlockedTypes = new Set(unlocked.map((a) => a.type));
     const locked = ALL_ACHIEVEMENTS.filter((a) => !unlockedTypes.has(a.type));
-
     return NextResponse.json({ unlocked, locked });
   } catch (error) {
     console.error("Achievements error:", error);

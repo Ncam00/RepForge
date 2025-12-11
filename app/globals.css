@@ -57,3 +57,34 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  /* Make headings and section titles more visible in dark mode */
+  .dark h1,
+  .dark h2,
+  .dark h3 {
+    @apply text-gray-100;
+  }
+  
+  /* Improve text contrast in dark mode */
+  .dark .text-gray-600 {
+    @apply !text-gray-300;
+  }
+  
+  .dark .text-gray-700 {
+    @apply !text-gray-200;
+  }
+  
+  .dark .text-gray-500 {
+    @apply !text-gray-400;
+  }
+  
+  /* Ensure proper contrast for cards and surfaces */
+  .dark .bg-white {
+    @apply !bg-gray-800;
+  }
+  
+  .dark .border {
+    @apply !border-gray-700;
+  }
+}

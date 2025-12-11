@@ -1,48 +1,49 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
+import prisma from "@/lib/db";
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const session = await auth();
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const following = await prisma.follow.findMany({
       where: { followerId: session.user.id },
-      include: {
-        following: {
-          select: {
-            id: true,
-            name: true,
-            _count: {
-              select: {
-                sessions: true,
-              },
-            },
-          },
-        },
-      },
+      select: { followingId: true },
     });
 
-    const followingWithStats = await Promise.all(
-      following.map(async (f: any) => {
-        const followerCount = await prisma.follow.count({
-          where: { followingId: f.followingId },
-        });
+    const users = await Promise.all(
+      following.map(async (f) => {
+        const [user, workoutCount, followerCount] = await Promise.all([
+          prisma.user.findUnique({
+            where: { id: f.followingId },
+            select: { id: true, name: true },
+          }),
+          prisma.workoutSession.count({
+            where: { 
+              userId: f.followingId,
+              completedAt: { not: null }
+            },
+          }),
+          prisma.follow.count({
+            where: { followingId: f.followingId },
+          }),
+        ]);
+
+        if (!user) return null;
 
         return {
-          id: f.followingId,
-          name: f.following.name,
-          workoutCount: f.following._count.sessions,
+          id: user.id,
+          name: user.name,
+          workoutCount,
           followers: followerCount,
         };
       })
     );
 
-    return NextResponse.json({ users: followingWithStats });
+    return NextResponse.json({ users: users.filter(u => u !== null) });
   } catch (error) {
     console.error("Following fetch error:", error);
     return NextResponse.json(

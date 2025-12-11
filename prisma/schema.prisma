@@ -204,6 +204,13 @@ model UserSettings {
   notifications  Boolean  @default(true)
   restTimerSound Boolean  @default(true)
   autoStartTimer Boolean  @default(true)
+  
+  // Privacy settings
+  profileVisibility String @default("public") // public, friends, private
+  workoutVisibility String @default("public") // public, friends, private
+  showOnLeaderboard Boolean @default(true)
+  allowFriendRequests Boolean @default(true)
+  
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -384,20 +391,40 @@ model XpTransaction {
 
 model Challenge {
   id          String    @id @default(cuid())
-  userId      String
-  type        String // daily, weekly, custom
+  creatorId   String // User who created the challenge
+  type        String // daily, weekly, monthly, custom
+  category    String // workouts, sets, reps, weight_lifted, streak
   title       String
   description String
   target      Int
-  progress    Int       @default(0)
   xpReward    Int
+  isPublic    Boolean   @default(false) // Can anyone join?
+  maxParticipants Int?  // null = unlimited
   status      String    @default("active") // active, completed, expired
   startDate   DateTime  @default(now())
   endDate     DateTime?
-  completedAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  @@index([userId, status])
+  participants ChallengeParticipant[]
+
+  @@index([status, endDate])
+  @@index([creatorId])
   @@map("challenges")
+}
+
+model ChallengeParticipant {
+  id          String    @id @default(cuid())
+  challengeId String
+  userId      String
+  progress    Int       @default(0)
+  status      String    @default("in_progress") // in_progress, completed, failed
+  joinedAt    DateTime  @default(now())
+  completedAt DateTime?
+  
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, userId])
+  @@index([userId])
+  @@map("challenge_participants")
 }

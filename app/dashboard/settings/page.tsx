@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { User, Moon, Sun, Bell, Download, Save, Settings2 } from "lucide-react";
+import { User, Bell, Download, Save, Settings2 } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { PrivacySettings } from "@/components/PrivacySettings";
 
 export default function SettingsPage() {
   const { data: session } = useSession();
@@ -22,10 +24,13 @@ export default function SettingsPage() {
     name: "",
     email: "",
     weightUnit: "lbs",
-    theme: "light",
     notifications: true,
     restTimerSound: true,
     autoStartTimer: true,
+    profileVisibility: "public",
+    workoutVisibility: "public",
+    showOnLeaderboard: true,
+    allowFriendRequests: true,
   });
 
   // Update form data when settings load
@@ -35,10 +40,13 @@ export default function SettingsPage() {
         name: settings.name || session?.user?.name || "",
         email: settings.email || session?.user?.email || "",
         weightUnit: settings.weightUnit || "lbs",
-        theme: settings.theme || "light",
         notifications: settings.notifications ?? true,
         restTimerSound: settings.restTimerSound ?? true,
         autoStartTimer: settings.autoStartTimer ?? true,
+        profileVisibility: settings.profileVisibility || "public",
+        workoutVisibility: settings.workoutVisibility || "public",
+        showOnLeaderboard: settings.showOnLeaderboard ?? true,
+        allowFriendRequests: settings.allowFriendRequests ?? true,
       });
     }
   }, [settings, session]);
@@ -173,40 +181,7 @@ export default function SettingsPage() {
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Theme
-              </label>
-              <div className="flex gap-4">
-                <button
-                  type="button"
-                  onClick={() => setFormData({ ...formData, theme: "light" })}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-md border ${
-                    formData.theme === "light"
-                      ? "bg-blue-50 border-blue-500 text-blue-700"
-                      : "border-gray-300 text-gray-700 hover:bg-gray-50"
-                  }`}
-                >
-                  <Sun className="w-4 h-4" />
-                  Light
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFormData({ ...formData, theme: "dark" })}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-md border ${
-                    formData.theme === "dark"
-                      ? "bg-blue-50 border-blue-500 text-blue-700"
-                      : "border-gray-300 text-gray-700 hover:bg-gray-50"
-                  }`}
-                >
-                  <Moon className="w-4 h-4" />
-                  Dark
-                </button>
-              </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Dark theme coming soon!
-              </p>
-            </div>
+            <ThemeToggle />
           </div>
         </section>
 
@@ -281,6 +256,15 @@ export default function SettingsPage() {
             </label>
           </div>
         </section>
+
+        {/* Privacy Settings */}
+        <PrivacySettings
+          profileVisibility={formData.profileVisibility}
+          workoutVisibility={formData.workoutVisibility}
+          showOnLeaderboard={formData.showOnLeaderboard}
+          allowFriendRequests={formData.allowFriendRequests}
+          onChange={(field, value) => setFormData({ ...formData, [field]: value })}
+        />
 
         {/* Data Management Section */}
         <section className="bg-white p-6 rounded-lg border shadow-sm">

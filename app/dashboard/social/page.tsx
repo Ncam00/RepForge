@@ -35,8 +35,8 @@ export default function SocialPage() {
       </div>
 
       {/* Tabs */}
-      <div className="border-b dark:border-gray-700">
-        <div className="flex gap-6">
+      <div className="border-b dark:border-gray-700 overflow-x-auto">
+        <div className="flex gap-3 sm:gap-6 min-w-max">
           <TabButton
             active={activeTab === "feed"}
             onClick={() => setActiveTab("feed")}
@@ -134,7 +134,7 @@ function FeedTab() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {feed.shares.map((share: any) => (
         <WorkoutShareCard key={share.id} share={share} />
       ))}
@@ -159,7 +159,7 @@ function WorkoutShareCard({ share }: { share: any }) {
   });
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-6 space-y-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-4 sm:p-6 space-y-3 sm:space-y-4">
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">

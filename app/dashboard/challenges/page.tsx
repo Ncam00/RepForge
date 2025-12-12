@@ -21,7 +21,7 @@ export default function ChallengesPage() {
   const [activeTab, setActiveTab] = useState<Tab>("active");
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -33,8 +33,8 @@ export default function ChallengesPage() {
       </div>
 
       {/* Tabs */}
-      <div className="border-b dark:border-gray-700">
-        <div className="flex gap-6">
+      <div className="border-b dark:border-gray-700 overflow-x-auto">
+        <div className="flex gap-3 sm:gap-6 min-w-max">
           <TabButton
             active={activeTab === "active"}
             onClick={() => setActiveTab("active")}
@@ -225,7 +225,7 @@ function ChallengeCard({
     : 0;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-6 space-y-4 hover:shadow-lg transition-shadow">
+    <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-4 sm:p-6 space-y-3 sm:space-y-4 hover:shadow-lg transition-shadow">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex-1">
@@ -362,8 +362,8 @@ function CreateChallengeTab() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-6 space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-4 sm:p-6 space-y-4 sm:space-y-6">
           <h2 className="text-xl font-semibold dark:text-gray-100">
             Create New Challenge
           </h2>

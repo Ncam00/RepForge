@@ -88,3 +88,67 @@
     @apply !border-gray-700;
   }
 }
+
+/* Responsive Container Utilities */
+@layer utilities {
+  .container-responsive {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6;
+  }
+  
+  .card-responsive {
+    @apply p-4 sm:p-6;
+  }
+  
+  .space-y-responsive {
+    @apply space-y-3 sm:space-y-4 lg:space-y-6;
+  }
+  
+  .gap-responsive {
+    @apply gap-3 sm:gap-4 lg:gap-6;
+  }
+  
+  /* Mobile-first button sizing */
+  .btn-responsive {
+    @apply px-4 py-2.5 sm:px-6 sm:py-3 text-sm sm:text-base;
+  }
+  
+  /* Touch-friendly tap targets (min 44px) */
+  .tap-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+  
+  /* Responsive text sizes */
+  .text-heading-responsive {
+    @apply text-2xl sm:text-3xl lg:text-4xl;
+  }
+  
+  .text-subheading-responsive {
+    @apply text-lg sm:text-xl lg:text-2xl;
+  }
+  
+  /* Responsive grid */
+  .grid-responsive {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4;
+  }
+  
+  /* Scrollable tabs on mobile */
+  .tabs-responsive {
+    @apply overflow-x-auto scrollbar-hide;
+  }
+  
+  .tabs-responsive > div {
+    @apply flex gap-3 sm:gap-6 min-w-max px-1;
+  }
+}
+
+/* Hide scrollbar but keep functionality */
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

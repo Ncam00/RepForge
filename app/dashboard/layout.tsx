@@ -9,13 +9,16 @@ export default async function DashboardLayout({
 }) {
   const session = await auth()
 
-  if (!session) {
-    redirect("/auth/signin")
+  // Temporarily disable auth for development
+  const user = session?.user || {
+    name: "Dev User",
+    email: "dev@example.com",
+    id: "dev-user-id"
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardNav user={session.user} />
+      <DashboardNav user={user} />
       <main className="container mx-auto px-4 py-8">{children}</main>
     </div>
   )

@@ -11,7 +11,7 @@ export async function getDevSession() {
     if (session?.user?.id) {
       return session
     }
-  } catch (error) {
+  } catch {
     // Fall through to dev user
   }
 

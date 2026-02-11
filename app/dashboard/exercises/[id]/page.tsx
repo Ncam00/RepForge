@@ -26,6 +26,21 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import YouTubeEmbed from "@/components/YouTubeEmbed";
+import { PersonalRecord } from "@/types/dashboard";
+
+interface ExerciseSet {
+  weight: number;
+  reps: number;
+  completedAt: string;
+}
+
+interface RecentSession {
+  sessionId: string;
+  sessionName: string;
+  date: string;
+  totalVolume: number;
+  sets: { weight: number; reps: number }[];
+}
 
 export default function ExerciseStatsPage() {
   const params = useParams();
@@ -255,7 +270,7 @@ export default function ExerciseStatsPage() {
         </div>
         {stats.personalRecords.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {stats.personalRecords.map((pr: any) => (
+            {stats.personalRecords.map((pr: PersonalRecord) => (
               <div
                 key={pr.id}
                 className="p-4 border rounded-lg hover:bg-gray-50"
@@ -317,7 +332,7 @@ export default function ExerciseStatsPage() {
                 </tr>
               </thead>
               <tbody>
-                {stats.bestSets.map((set: any, idx: number) => (
+                {stats.bestSets.map((set: ExerciseSet, idx: number) => (
                   <tr key={idx} className="border-b hover:bg-gray-50">
                     <td className="p-3">
                       {format(new Date(set.completedAt), "MMM d, yyyy")}
@@ -348,7 +363,7 @@ export default function ExerciseStatsPage() {
         </div>
         {stats.recentSessions.length > 0 ? (
           <div className="space-y-3">
-            {stats.recentSessions.map((session: any) => (
+            {stats.recentSessions.map((session: RecentSession) => (
               <div
                 key={session.sessionId}
                 className="p-4 border rounded-lg hover:bg-gray-50"
@@ -370,7 +385,7 @@ export default function ExerciseStatsPage() {
                   </div>
                 </div>
                 <div className="flex gap-2 flex-wrap">
-                  {session.sets.map((set: any, idx: number) => (
+                  {session.sets.map((set: { weight: number; reps: number }, idx: number) => (
                     <span
                       key={idx}
                       className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-sm"

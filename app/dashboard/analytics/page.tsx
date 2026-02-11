@@ -18,6 +18,7 @@ import {
 } from "recharts";
 import { TrendingUp, Target, Calendar, Flame, Award } from "lucide-react";
 import { format, subDays } from "date-fns";
+import { AnalyticsData, MuscleGroupEntry, TopExercise } from "@/types/dashboard";
 
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
 
@@ -148,7 +149,7 @@ export default function AnalyticsPage() {
                   outerRadius={100}
                   label={(entry) => `${entry.name}: ${entry.value}`}
                 >
-                  {analytics.muscleGroupData.map((entry: any, index: number) => (
+                  {analytics.muscleGroupData.map((entry: MuscleGroupEntry, index: number) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -216,7 +217,7 @@ export default function AnalyticsPage() {
                 </tr>
               </thead>
               <tbody>
-                {analytics.topExercises.map((exercise: any, idx: number) => (
+                {analytics.topExercises.map((exercise: TopExercise, idx: number) => (
                   <tr key={idx} className="border-b hover:bg-gray-50">
                     <td className="p-3 font-medium">{exercise.name}</td>
                     <td className="p-3">{exercise.sessions}</td>

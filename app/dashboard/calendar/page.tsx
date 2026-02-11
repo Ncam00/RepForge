@@ -17,6 +17,7 @@ import {
 } from "date-fns";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Check, X } from "lucide-react";
 import Link from "next/link";
+import { WorkoutSession } from "@/types/dashboard";
 
 export default function CalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -42,7 +43,7 @@ export default function CalendarPage() {
     if (!calendarData?.workouts) return [];
     const dateStr = format(date, "yyyy-MM-dd");
     return calendarData.workouts.filter(
-      (w: any) => format(new Date(w.startedAt), "yyyy-MM-dd") === dateStr
+      (w: WorkoutSession) => format(new Date(w.startedAt), "yyyy-MM-dd") === dateStr
     );
   };
 
@@ -169,7 +170,7 @@ export default function CalendarPage() {
 
               {selectedWorkouts.length > 0 ? (
                 <div className="space-y-3">
-                  {selectedWorkouts.map((workout: any) => (
+                  {selectedWorkouts.map((workout: WorkoutSession) => (
                     <Link
                       key={workout.id}
                       href={`/dashboard/history?session=${workout.id}`}

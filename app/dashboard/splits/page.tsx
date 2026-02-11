@@ -45,6 +45,30 @@ type WorkoutSplit = {
   days: SplitDay[]
 }
 
+interface AddExerciseData {
+  exerciseId: string;
+  order?: number;
+  targetSets?: number;
+  targetReps?: string;
+  restTime?: number;
+  notes?: string;
+}
+
+interface UpdateExerciseData {
+  order?: number;
+  targetSets?: number | null;
+  targetReps?: string | null;
+  restTime?: number | null;
+  notes?: string | null;
+}
+
+interface SplitDayInput {
+  dayOfWeek: number;
+  name: string;
+  description?: string;
+  order?: number;
+}
+
 const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
 function DayExerciseManager({ splitDayId }: { splitDayId: string }) {
@@ -79,7 +103,7 @@ function DayExerciseManager({ splitDayId }: { splitDayId: string }) {
   })
 
   const addExerciseMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: AddExerciseData) => {
       const res = await fetch(`/api/splits/${splitDayId}/exercises`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -100,7 +124,7 @@ function DayExerciseManager({ splitDayId }: { splitDayId: string }) {
   })
 
   const updateExerciseMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+    mutationFn: async ({ id, data }: { id: string; data: UpdateExerciseData }) => {
       const res = await fetch(`/api/splits/exercises/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -381,7 +405,7 @@ export default function SplitsPage() {
   })
 
   const createSplitMutation = useMutation({
-    mutationFn: async (data: { name: string; description?: string; days?: any[] }) => {
+    mutationFn: async (data: { name: string; description?: string; days?: SplitDayInput[] }) => {
       const res = await fetch("/api/splits", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -435,7 +459,7 @@ export default function SplitsPage() {
     setSplitDays(splitDays.filter((_, i) => i !== index))
   }
 
-  const handleDayChange = (index: number, field: string, value: any) => {
+  const handleDayChange = (index: number, field: string, value: string | number) => {
     const updated = [...splitDays]
     updated[index] = { ...updated[index], [field]: value }
     setSplitDays(updated)

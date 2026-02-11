@@ -18,8 +18,15 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
+import { SocialShare, Achievement, SocialUser, LeaderboardEntry } from "@/types/dashboard";
 
 type Tab = "feed" | "following" | "leaderboard" | "achievements";
+
+interface LeaderboardEntryWithUser extends LeaderboardEntry {
+  id: string;
+  value: number;
+  isCurrentUser: boolean;
+}
 
 export default function SocialPage() {
   const [activeTab, setActiveTab] = useState<Tab>("feed");
@@ -134,14 +141,14 @@ function FeedTab() {
 
   return (
     <div className="space-y-4">
-      {feed.shares.map((share: any) => (
+      {feed.shares.map((share: SocialShare) => (
         <WorkoutShareCard key={share.id} share={share} />
       ))}
     </div>
   );
 }
 
-function WorkoutShareCard({ share }: { share: any }) {
+function WorkoutShareCard({ share }: { share: SocialShare }) {
   const queryClient = useQueryClient();
 
   const likeMutation = useMutation({
@@ -261,7 +268,7 @@ function FollowingTab() {
           </div>
         ) : (
           <div className="space-y-3">
-            {following.users.map((user: any) => (
+            {following.users.map((user: SocialUser) => (
               <UserCard key={user.id} user={user} isFollowing={true} />
             ))}
           </div>
@@ -273,7 +280,7 @@ function FollowingTab() {
         <div>
           <h2 className="text-xl font-semibold mb-4 dark:text-gray-100">Suggested Users</h2>
           <div className="space-y-3">
-            {suggestions.users.map((user: any) => (
+            {suggestions.users.map((user: SocialUser) => (
               <UserCard key={user.id} user={user} isFollowing={false} />
             ))}
           </div>
@@ -287,7 +294,7 @@ function UserCard({
   user,
   isFollowing,
 }: {
-  user: any;
+  user: SocialUser;
   isFollowing: boolean;
 }) {
   const queryClient = useQueryClient();
@@ -394,7 +401,7 @@ function LeaderboardTab() {
         </div>
       ) : (
         <div className="space-y-2">
-          {leaderboard.entries.map((entry: any, index: number) => (
+          {leaderboard.entries.map((entry: LeaderboardEntryWithUser, index: number) => (
             <div
               key={entry.id}
               className={`flex items-center gap-4 p-4 rounded-lg border ${
@@ -469,7 +476,7 @@ function AchievementsTab() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {unlocked.map((achievement: any) => (
+            {unlocked.map((achievement: Achievement) => (
               <AchievementCard
                 key={achievement.id}
                 achievement={achievement}
@@ -487,7 +494,7 @@ function AchievementsTab() {
             Locked ({locked.length})
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {locked.map((achievement: any) => (
+            {locked.map((achievement: Achievement) => (
               <AchievementCard
                 key={achievement.type}
                 achievement={achievement}
@@ -505,7 +512,7 @@ function AchievementCard({
   achievement,
   unlocked,
 }: {
-  achievement: any;
+  achievement: Achievement;
   unlocked: boolean;
 }) {
   return (

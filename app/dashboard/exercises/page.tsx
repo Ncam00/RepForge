@@ -25,6 +25,20 @@ type Exercise = {
   variations?: string[] | null
 }
 
+interface CreateExerciseData {
+  name: string;
+  description?: string;
+  videoUrl?: string;
+  muscleGroups: string[];
+  equipment?: string;
+  difficulty?: string;
+  instructions?: string;
+  tips?: string;
+  isPublic?: boolean;
+  category?: string;
+  variations?: string[];
+}
+
 const MUSCLE_GROUPS = [
   "abs", "back", "biceps", "calves", "chest", "glutes",
   "hamstrings", "quads", "shoulders", "traps", "triceps"
@@ -80,7 +94,7 @@ export default function ExercisesPage() {
   })
 
   const createExerciseMutation = useMutation({
-    mutationFn: async (exerciseData: any) => {
+    mutationFn: async (exerciseData: CreateExerciseData) => {
       const res = await fetch("/api/exercises", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

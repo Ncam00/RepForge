@@ -4,6 +4,23 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Copy, Play, Trash2, Edit, Share2, Clock, TrendingUp } from "lucide-react";
 import Link from "next/link";
+import { WorkoutTemplate, Exercise, TemplateExercise } from "@/types/dashboard";
+
+interface CreateTemplateData {
+  name: string;
+  description?: string;
+  category?: string;
+  difficulty?: string;
+  duration?: number;
+  exercises: {
+    exerciseId: string;
+    sets: number;
+    reps: string;
+    restTime: number;
+    notes: string;
+    order: number;
+  }[];
+}
 
 export default function TemplatesPage() {
   const queryClient = useQueryClient();
@@ -40,7 +57,7 @@ export default function TemplatesPage() {
   });
 
   const createTemplateMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: CreateTemplateData) => {
       const res = await fetch("/api/templates", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -123,7 +140,7 @@ export default function TemplatesPage() {
     setSelectedExercises(selectedExercises.filter((_, i) => i !== index));
   };
 
-  const updateExercise = (index: number, field: string, value: any) => {
+  const updateExercise = (index: number, field: string, value: string | number) => {
     const updated = [...selectedExercises];
     updated[index] = { ...updated[index], [field]: value };
     setSelectedExercises(updated);
@@ -283,7 +300,7 @@ export default function TemplatesPage() {
                           required
                         >
                           <option value="">Select exercise...</option>
-                          {exercises?.map((exercise: any) => (
+                          {exercises?.map((exercise: Exercise) => (
                             <option key={exercise.id} value={exercise.id}>
                               {exercise.name}
                             </option>
@@ -407,7 +424,7 @@ export default function TemplatesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {templates?.map((template: any) => (
+          {templates?.map((template: WorkoutTemplate) => (
             <div
               key={template.id}
               className="bg-white p-6 rounded-lg border shadow-sm hover:shadow-md transition-shadow"
@@ -455,7 +472,7 @@ export default function TemplatesPage() {
                   {template.exercises?.length || 0} exercises
                 </div>
                 <div className="space-y-1">
-                  {template.exercises?.slice(0, 3).map((ex: any) => (
+                  {template.exercises?.slice(0, 3).map((ex: TemplateExercise) => (
                     <div
                       key={ex.id}
                       className="text-sm text-gray-700 flex items-center gap-2"

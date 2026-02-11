@@ -14,6 +14,7 @@ import {
   Dumbbell,
 } from "lucide-react";
 import { format } from "date-fns";
+import { Challenge } from "@/types/dashboard";
 
 type Tab = "active" | "my-challenges" | "create";
 
@@ -113,7 +114,7 @@ function ActiveChallengesTab() {
   }
 
   const activeChallenges = challenges?.challenges?.filter(
-    (c: any) => !c.isJoined
+    (c: Challenge) => !c.isJoined
   );
 
   if (!activeChallenges?.length) {
@@ -132,7 +133,7 @@ function ActiveChallengesTab() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {activeChallenges.map((challenge: any) => (
+      {activeChallenges.map((challenge: Challenge) => (
         <ChallengeCard key={challenge.id} challenge={challenge} />
       ))}
     </div>
@@ -157,7 +158,7 @@ function MyChallengesTab() {
     );
   }
 
-  const myChallenges = challenges?.challenges?.filter((c: any) => c.isJoined);
+  const myChallenges = challenges?.challenges?.filter((c: Challenge) => c.isJoined);
 
   if (!myChallenges?.length) {
     return (
@@ -175,7 +176,7 @@ function MyChallengesTab() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {myChallenges.map((challenge: any) => (
+      {myChallenges.map((challenge: Challenge) => (
         <ChallengeCard key={challenge.id} challenge={challenge} showProgress />
       ))}
     </div>
@@ -186,7 +187,7 @@ function ChallengeCard({
   challenge,
   showProgress = false,
 }: {
-  challenge: any;
+  challenge: Challenge;
   showProgress?: boolean;
 }) {
   const queryClient = useQueryClient();

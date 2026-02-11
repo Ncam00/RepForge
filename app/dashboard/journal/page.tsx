@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Plus, Edit, Trash2, BookOpen, Smile, Frown, Meh, Battery, Moon } from "lucide-react";
+import { JournalEntry } from "@/types/dashboard";
 
 const MOODS = [
   { value: "great", label: "Great", icon: "😄", color: "green" },
@@ -13,10 +14,20 @@ const MOODS = [
   { value: "terrible", label: "Terrible", icon: "😢", color: "red" },
 ];
 
+interface JournalFormData {
+  title?: string;
+  content?: string;
+  mood?: string;
+  energyLevel?: number;
+  sleepQuality?: number;
+  bodyWeight?: number;
+  notes?: string;
+}
+
 export default function JournalPage() {
   const queryClient = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
-  const [editingEntry, setEditingEntry] = useState<any>(null);
+  const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -32,12 +43,12 @@ export default function JournalPage() {
     queryFn: async () => {
       const res = await fetch("/api/journal");
       if (!res.ok) throw new Error("Failed to fetch entries");
-      return res.json();
+      return res.json() as Promise<{ entries: JournalEntry[] }>;
     },
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: JournalFormData) => {
       const res = await fetch("/api/journal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -251,7 +262,7 @@ export default function JournalPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {entries?.map((entry: any) => {
+          {entries?.entries?.map((entry: JournalEntry) => {
             const entryMood = MOODS.find((m) => m.value === entry.mood);
             return (
               <div

@@ -9,19 +9,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area, AreaChart, ComposedChart, Bar, BarChart } from "recharts"
 import { format, subDays, subMonths, differenceInDays } from "date-fns"
 import { Plus, Trash2, Download, Target, TrendingUp, TrendingDown, Camera, Image as ImageIcon, X } from "lucide-react"
+import { Weight } from "@/types/dashboard"
 
-type Weight = {
-  id: string
-  weight: number
-  unit: string
-  bodyFat?: number | null
-  muscleMass?: number | null
-  date: string
-  notes?: string | null
-  photoUrl?: string | null
-}
-
-type WeightGoal = {
+interface WeightGoal {
   id: string
   targetWeight: number
   unit: string
@@ -29,6 +19,23 @@ type WeightGoal = {
   startWeight: number
   startDate: string
   isActive: boolean
+}
+
+interface AddWeightData {
+  weight: number;
+  unit: "kg" | "lbs";
+  bodyFat?: number;
+  muscleMass?: number;
+  notes?: string;
+  photoUrl?: string;
+  date?: string;
+}
+
+interface SetGoalData {
+  targetWeight: number;
+  unit: "kg" | "lbs";
+  targetDate?: string;
+  startWeight: number;
 }
 
 export default function WeightPage() {
@@ -51,7 +58,7 @@ export default function WeightPage() {
     queryFn: async () => {
       const res = await fetch("/api/weight")
       if (!res.ok) throw new Error("Failed to fetch weights")
-      return res.json()
+      return res.json() as Promise<{ weights: Weight[] }>
     },
   })
 
@@ -60,12 +67,12 @@ export default function WeightPage() {
     queryFn: async () => {
       const res = await fetch("/api/weight/goal")
       if (!res.ok) throw new Error("Failed to fetch goal")
-      return res.json()
+      return res.json() as Promise<{ goal?: WeightGoal }>
     },
   })
 
   const addWeightMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: AddWeightData) => {
       const res = await fetch("/api/weight", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -85,7 +92,7 @@ export default function WeightPage() {
   })
 
   const setGoalMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: SetGoalData) => {
       const res = await fetch("/api/weight/goal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -578,7 +585,7 @@ export default function WeightPage() {
               <select
                 className="flex h-10 rounded-lg border-2 border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors focus:outline-none focus:border-primary font-medium"
                 value={chartMetric}
-                onChange={(e) => setChartMetric(e.target.value as any)}
+                onChange={(e) => setChartMetric(e.target.value as "weight" | "bodyFat" | "muscleMass")}
               >
                 <option value="weight">Weight</option>
                 <option value="bodyFat">Body Fat %</option>

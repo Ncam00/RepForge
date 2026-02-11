@@ -9,6 +9,14 @@ import { format, formatDistanceToNow } from "date-fns"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { useRouter } from "next/navigation"
 import XpProgress from "@/components/XpProgress"
+import { DashboardStats, PersonalRecord, WorkoutSession } from "@/types/dashboard"
+
+interface DashboardResponse {
+  stats: DashboardStats;
+  recentPRs: PersonalRecord[];
+  recentSessions: WorkoutSession[];
+  weightHistory: Array<{ date: string; weight: number }>;
+}
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -18,14 +26,14 @@ export default function DashboardPage() {
     queryFn: async () => {
       const res = await fetch("/api/dashboard/stats")
       if (!res.ok) throw new Error("Failed to fetch stats")
-      return res.json()
+      return res.json() as Promise<DashboardResponse>
     },
   })
 
   const stats = data?.stats || {}
-  const recentPRs = data?.recentPRs || []
-  const recentSessions = data?.recentSessions || []
-  const weightHistory = data?.weightHistory || []
+  const recentPRs = (data?.recentPRs || []) as PersonalRecord[]
+  const recentSessions = (data?.recentSessions || []) as WorkoutSession[]
+  const weightHistory = (data?.weightHistory || []) as Array<{ date: string; weight: number }>
 
   return (
     <div className="space-y-8">
@@ -176,11 +184,11 @@ export default function DashboardPage() {
           <CardContent>
             {recentPRs.length > 0 ? (
               <div className="space-y-2">
-                {recentPRs.slice(0, 3).map((pr: any) => (
+                {recentPRs.slice(0, 3).map((pr) => (
                   <div key={pr.id} className="flex items-center justify-between text-sm">
-                    <span className="font-medium truncate">{pr.exerciseName}</span>
+                    <span className="font-medium truncate">{pr.exercise?.name || "Exercise"}</span>
                     <span className="text-muted-foreground">
-                      {pr.value} {pr.recordType === "one_rep_max" ? "kg" : ""}
+                      {pr.value.toFixed(1)} {pr.recordType === "one_rep_max" ? "kg" : ""}
                     </span>
                   </div>
                 ))}
@@ -218,8 +226,8 @@ export default function DashboardPage() {
                 />
                 <YAxis fontSize={12} />
                 <Tooltip
-                  labelFormatter={(date) => format(new Date(date), "PPP")}
-                  formatter={(value: any) => [`${value} ${stats.weightUnit}`, "Weight"]}
+                  labelFormatter={(date: string) => format(new Date(date), "PPP")}
+                  formatter={(value: number) => [`${value} ${stats.weightUnit}`, "Weight"]}
                 />
                 <Line
                   type="monotone"
@@ -285,7 +293,7 @@ export default function DashboardPage() {
           <CardContent>
             {recentSessions.length > 0 ? (
               <div className="space-y-3">
-                {recentSessions.slice(0, 3).map((session: any) => (
+                {recentSessions.slice(0, 3).map((session) => (
                   <div key={session.id} className="group border-l-4 border-primary pl-3 py-2 rounded hover:bg-muted/50 transition-colors duration-200 cursor-pointer">
                     <div className="font-medium text-sm group-hover:text-primary transition-colors">
                       {session.name || "Workout Session"}

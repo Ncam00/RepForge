@@ -58,3 +58,71 @@
     color: hsl(var(--foreground));
   }
 }
+/* Smooth Animations and Micro-interactions */
+@layer utilities {
+  /* Fade in animation */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  /* Pulse animation for active elements */
+  @keyframes pulse-soft {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+  }
+
+  .animate-pulse-soft {
+    animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Smooth transitions for interactive elements */
+  button, a, [role="button"] {
+    @apply transition-all duration-200 ease-out;
+  }
+
+  /* Optimize for touch targets on mobile */
+  @media (max-width: 640px) {
+    button, [role="button"] {
+      @apply min-h-[44px] min-w-[44px];
+    }
+  }
+
+  /* Smooth scroll behavior */
+  html {
+    @apply scroll-smooth;
+  }
+
+  /* Input focus states */
+  input:focus, select:focus, textarea:focus {
+    @apply outline-none ring-2 ring-offset-2;
+  }
+
+  .dark input:focus, .dark select:focus, .dark textarea:focus {
+    @apply outline-none ring-2 ring-offset-2;
+  }
+
+  /* Card hover effects */
+  .card-hover {
+    @apply transition-all duration-200 hover:shadow-lg hover:border-primary/50;
+  }
+
+  /* Smooth scale on tap/click */
+  .tap-scale {
+    @apply transition-transform duration-150 active:scale-95;
+  }
+}

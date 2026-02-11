@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getDevSession } from "@/lib/dev-auth";
 import prisma from "@/lib/db";
 import { z } from "zod";
 import { awardXP, updateStreak, XP_REWARDS } from "@/lib/xp";
@@ -20,7 +20,7 @@ const completeSessionSchema = z.object({
 // GET /api/sessions - Get all workout sessions
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth();
+    const session = await getDevSession();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
 // POST /api/sessions - Create new workout session
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
+    const session = await getDevSession();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
 // PATCH /api/sessions - Update workout session (usually to complete it)
 export async function PATCH(req: NextRequest) {
   try {
-    const session = await auth();
+    const session = await getDevSession();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getDevSession } from "@/lib/dev-auth";
 import prisma from "@/lib/db";
 import { z } from "zod";
 
@@ -13,7 +13,7 @@ const prSchema = z.object({
 // GET /api/prs - Get all personal records
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth();
+    const session = await getDevSession();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
 // POST /api/prs - Create or update a PR
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
+    const session = await getDevSession();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

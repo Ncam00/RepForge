@@ -1,4 +1,4 @@
-import { auth } from "@/auth"
+import { getDevSession } from "@/lib/dev-auth"
 import { NextResponse } from "next/server"
 import prisma from "@/lib/db"
 import { z } from "zod"
@@ -17,7 +17,7 @@ const exerciseSchema = z.object({
 
 export async function GET(req: Request) {
   try {
-    const session = await auth()
+    const session = await getDevSession()
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -67,7 +67,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const session = await auth()
+    const session = await getDevSession()
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -174,7 +174,7 @@ export async function PATCH(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
-    const session = await auth()
+    const session = await getDevSession()
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }

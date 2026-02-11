@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts"
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area, AreaChart, ComposedChart, Bar, BarChart } from "recharts"
 import { format, subDays, subMonths, differenceInDays } from "date-fns"
 import { Plus, Trash2, Download, Target, TrendingUp, TrendingDown, Camera, Image as ImageIcon, X } from "lucide-react"
 
@@ -567,16 +567,16 @@ export default function WeightPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border-0 shadow-lg">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <CardTitle>Trends</CardTitle>
+              <CardTitle className="text-xl">Weight Trends</CardTitle>
               <CardDescription>Visualize your progress over time</CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <select
-                className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                className="flex h-10 rounded-lg border-2 border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors focus:outline-none focus:border-primary font-medium"
                 value={chartMetric}
                 onChange={(e) => setChartMetric(e.target.value as any)}
               >
@@ -584,40 +584,71 @@ export default function WeightPage() {
                 <option value="bodyFat">Body Fat %</option>
                 <option value="muscleMass">Muscle Mass</option>
               </select>
-              {(["7d", "30d", "90d", "all"] as const).map((range) => (
-                <Button
-                  key={range}
-                  variant={dateRange === range ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setDateRange(range)}
-                >
-                  {range === "all" ? "All" : range.toUpperCase()}
-                </Button>
-              ))}
+              <div className="flex gap-2">
+                {(["7d", "30d", "90d", "all"] as const).map((range) => (
+                  <Button
+                    key={range}
+                    variant={dateRange === range ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setDateRange(range)}
+                    className="transition-all duration-200"
+                  >
+                    {range === "all" ? "All" : range.toUpperCase()}
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
         </CardHeader>
         <CardContent>
           {chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey={chartMetric}
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2}
-                  name={chartMetric === "weight" ? "Weight" : chartMetric === "bodyFat" ? "Body Fat %" : "Muscle Mass"}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            <div className="w-full h-[400px] -mx-6 px-6">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+                  <defs>
+                    <linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis 
+                    dataKey="date" 
+                    stroke="hsl(var(--muted-foreground))"
+                    style={{ fontSize: "12px" }}
+                  />
+                  <YAxis 
+                    stroke="hsl(var(--muted-foreground))"
+                    style={{ fontSize: "12px" }}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--background))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px"
+                    }}
+                    labelStyle={{ color: "hsl(var(--foreground))" }}
+                  />
+                  <Legend 
+                    wrapperStyle={{ paddingTop: "20px" }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey={chartMetric}
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={3}
+                    fillOpacity={1}
+                    fill="url(#colorWeight)"
+                    name={chartMetric === "weight" ? "Weight" : chartMetric === "bodyFat" ? "Body Fat %" : "Muscle Mass"}
+                    isAnimationActive={true}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           ) : (
-            <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-              No data to display
+            <div className="h-[300px] flex flex-col items-center justify-center text-muted-foreground gap-3">
+              <TrendingUp className="h-12 w-12 opacity-20" />
+              <p>No data to display yet. Start logging your weight!</p>
             </div>
           )}
         </CardContent>

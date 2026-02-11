@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getDevSession } from "@/lib/dev-auth";
 import prisma from "@/lib/db";
 
 // GET journal entries
 export async function GET() {
   try {
-    const session = await auth();
+    const session = await getDevSession();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -28,7 +28,7 @@ export async function GET() {
 // CREATE journal entry
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
+    const session = await getDevSession();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

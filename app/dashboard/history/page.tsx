@@ -1,12 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { Plus, Trash2, Play, Square, Clock, Dumbbell, Timer, CheckCircle2, Trophy } from "lucide-react"
+import { Plus, Trash2, Play, Square, Clock, Dumbbell, Timer, CheckCircle2, Trophy, Flame } from "lucide-react"
 import { format } from "date-fns"
 
 type Exercise = {
@@ -194,25 +194,34 @@ function ActiveWorkout({ session }: { session: WorkoutSession }) {
 
   return (
     <div className="space-y-6">
-      <Card className="border-primary">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
+      <Card className="border-2 border-primary/50 bg-gradient-to-br from-background to-primary/5">
+        <CardHeader className="pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-500/20 rounded-lg">
                 <Play className="h-5 w-5 text-green-500" />
-                Active Workout
-              </CardTitle>
-              <CardDescription>
-                Started {format(new Date(session.startedAt), "PPp")}
-              </CardDescription>
+              </div>
+              <div>
+                <CardTitle>Active Workout</CardTitle>
+                <CardDescription className="mt-1">
+                  {format(new Date(session.startedAt), "MMM d, yyyy 'at' h:mm a")}
+                </CardDescription>
+              </div>
             </div>
-            <Button variant="destructive" onClick={handleCompleteSession}>
-              <CheckCircle2 className="mr-2 h-4 w-4" />
-              Complete Workout
+            <Button 
+              size="lg"
+              variant="default"
+              onClick={handleCompleteSession}
+              className="w-full sm:w-auto gap-2"
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              Complete
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+
+        <CardContent className="space-y-6">
+          {/* Rest Timer */}
           {restTimerDuration && (
             <RestTimer
               duration={restTimerDuration}
@@ -220,34 +229,118 @@ function ActiveWorkout({ session }: { session: WorkoutSession }) {
             />
           )}
 
+          {/* Exercise Selection */}
           <div className="space-y-3">
-            <Label>Add Exercise Set</Label>
+            <div className="flex items-baseline justify-between">
+              <Label className="text-base font-semibold">Add Exercise Set</Label>
+              <span className="text-xs text-muted-foreground">{session.sets.length} sets logged</span>
+            </div>
             <select
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+              className="flex h-11 w-full rounded-lg border-2 border-input bg-background px-4 py-2 text-sm shadow-sm transition-colors focus:outline-none focus:border-primary font-medium"
               value={selectedExerciseId}
               onChange={(e) => setSelectedExerciseId(e.target.value)}
             >
-              <option value="">Select exercise...</option>
+              <option value="">Select an exercise...</option>
               {availableExercises.map((ex: any) => (
                 <option key={ex.id} value={ex.id}>
                   {ex.name}
                 </option>
               ))}
             </select>
+          </div>
 
-            <div className="grid grid-cols-3 gap-2">
-              <div>
-                <Label className="text-xs">Weight (kg/lbs)</Label>
-                <Input
-                  type="number"
-                  placeholder="100"
-                  value={weight}
-                  onChange={(e) => setWeight(parseFloat(e.target.value) || "")}
-                />
-              </div>
-              <div>
-                <Label className="text-xs">Reps</Label>
-                <Input
+          {/* Set Input Fields - Mobile Optimized */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="weight" className="text-xs font-semibold text-muted-foreground">
+                Weight
+              </Label>
+              <Input
+                id="weight"
+                type="number"
+                placeholder="100"
+                value={weight}
+                onChange={(e) => setWeight(parseFloat(e.target.value) || "")}
+                className="h-11 text-lg font-semibold text-center"
+              />
+              <p className="text-xs text-muted-foreground text-center">kg/lbs</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="reps" className="text-xs font-semibold text-muted-foreground">
+                Reps
+              </Label>
+              <Input
+                id="reps"
+                type="number"
+                placeholder="8"
+                value={reps}
+                onChange={(e) => setReps(parseInt(e.target.value) || "")}
+                className="h-11 text-lg font-semibold text-center"
+              />
+              <p className="text-xs text-muted-foreground text-center">reps</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="rpe" className="text-xs font-semibold text-muted-foreground">
+                RPE
+              </Label>
+              <Input
+                id="rpe"
+                type="number"
+                placeholder="8"
+                min="1"
+                max="10"
+                value={rpe}
+                onChange={(e) => setRpe(parseInt(e.target.value) || "")}
+                className="h-11 text-lg font-semibold text-center"
+              />
+              <p className="text-xs text-muted-foreground text-center">/10</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="warmup" className="text-xs font-semibold text-muted-foreground">
+                Type
+              </Label>
+              <button
+                onClick={() => setIsWarmup(!isWarmup)}
+                className={`h-11 w-full rounded-lg font-semibold text-sm transition-all duration-200 ${
+                  isWarmup
+                    ? "bg-yellow-500/20 border-2 border-yellow-500 text-yellow-700"
+                    : "bg-muted border-2 border-input text-muted-foreground hover:border-primary"
+                }`}
+              >
+                {isWarmup ? "Warmup" : "Working"}
+              </button>
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-2">
+            <Label htmlFor="notes" className="text-xs font-semibold text-muted-foreground">
+              Notes (optional)
+            </Label>
+            <Input
+              id="notes"
+              placeholder="How did the set feel?"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="h-10"
+            />
+          </div>
+
+          {/* Add Set Button - Large for mobile */}
+          <Button
+            onClick={handleAddSet}
+            disabled={!selectedExerciseId || addSetMutation.isPending}
+            size="lg"
+            className="w-full text-base font-semibold gap-2 hover:scale-105 transition-transform"
+          >
+            <Plus className="h-5 w-5" />
+            {addSetMutation.isPending ? "Adding..." : "Add Set"}
+          </Button>
+        </CardContent>
+      </Card>
                   type="number"
                   placeholder="10"
                   value={reps}

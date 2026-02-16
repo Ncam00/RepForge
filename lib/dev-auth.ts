@@ -15,6 +15,18 @@ export async function getDevSession() {
     // Fall through to dev user
   }
 
+  // Ensure dev user exists in database
+  await prisma.user.upsert({
+    where: { id: DEV_USER_ID },
+    update: {},
+    create: {
+      id: DEV_USER_ID,
+      email: DEV_USER_EMAIL,
+      name: "Dev User",
+      password: "dev-password-hash",
+    },
+  })
+
   // Return a dev user for testing
   return {
     user: {

@@ -51,6 +51,7 @@ export default function WeightPage() {
   const [showGoalForm, setShowGoalForm] = useState(false)
   const [targetWeight, setTargetWeight] = useState("")
   const [targetDate, setTargetDate] = useState("")
+  const [startingWeight, setStartingWeight] = useState("")
   const [chartMetric, setChartMetric] = useState<"weight" | "bodyFat" | "muscleMass">("weight")
   const [goalSuccessMessage, setGoalSuccessMessage] = useState<string | null>(null)
 
@@ -116,6 +117,7 @@ export default function WeightPage() {
       setShowGoalForm(false)
       setTargetWeight("")
       setTargetDate("")
+      setStartingWeight("")
       setGoalSuccessMessage("Goal set successfully! Track your progress below.")
     },
   })
@@ -190,14 +192,15 @@ export default function WeightPage() {
     const target = parseFloat(targetWeight)
     const weights: Weight[] = data?.weights || []
     const latestWeight = weights[0]
+    const start = startingWeight ? parseFloat(startingWeight) : latestWeight?.weight
 
-    if (isNaN(target) || target <= 0 || !latestWeight) return
+    if (isNaN(target) || target <= 0 || !start) return
 
     setGoalMutation.mutate({
       targetWeight: target,
       unit,
       targetDate: targetDate ? new Date(targetDate).toISOString() : undefined,
-      startWeight: latestWeight.weight,
+      startWeight: start,
     })
   }
 
@@ -425,7 +428,23 @@ export default function WeightPage() {
             <CardDescription>Define your target weight and timeline</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="space-y-2">
+                <Label htmlFor="starting-weight">Starting Weight *</Label>
+                <Input
+                  id="starting-weight"
+                  type="number"
+                  step="0.1"
+                  placeholder={latestWeight ? latestWeight.weight.toString() : "72.0"}
+                  value={startingWeight}
+                  onChange={(e) => setStartingWeight(e.target.value)}
+                />
+                {latestWeight && !startingWeight && (
+                  <p className="text-xs text-muted-foreground">
+                    Leave blank to use latest: {latestWeight.weight} {unit}
+                  </p>
+                )}
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="target-weight">Target Weight *</Label>
                 <Input
@@ -449,7 +468,7 @@ export default function WeightPage() {
               <div className="flex items-end">
                 <Button
                   onClick={handleSetGoal}
-                  disabled={!targetWeight || setGoalMutation.isPending}
+                  disabled={!targetWeight || (!startingWeight && !latestWeight) || setGoalMutation.isPending}
                   className="w-full"
                 >
                   <Target className="mr-2 h-4 w-4" />

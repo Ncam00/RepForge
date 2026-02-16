@@ -8,9 +8,9 @@ const weightSchema = z.object({
   unit: z.enum(["kg", "lbs"]),
   bodyFat: z.number().min(0).max(100).optional(),
   muscleMass: z.number().positive().optional(),
-  date: z.string().datetime().optional(),
+  date: z.string().optional(),
   notes: z.string().optional(),
-  photoUrl: z.string().url().optional(),
+  photoUrl: z.string().optional(),
 })
 
 export async function GET(req: Request) {

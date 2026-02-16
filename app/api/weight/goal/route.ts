@@ -6,7 +6,7 @@ import { z } from "zod"
 const goalSchema = z.object({
   targetWeight: z.number().positive(),
   unit: z.enum(["kg", "lbs"]),
-  targetDate: z.string().datetime().optional(),
+  targetDate: z.string().optional(),
   startWeight: z.number().positive(),
 })
 
@@ -61,6 +61,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ goal }, { status: 201 })
   } catch (error) {
+    console.error("Weight goal error:", error)
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors }, { status: 400 })
     }
@@ -74,7 +75,7 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
-    const session = await auth()
+    const session = await getDevSession()
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }

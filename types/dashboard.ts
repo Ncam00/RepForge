@@ -260,3 +260,31 @@ export interface Split {
   isActive: boolean;
   createdAt: string;
 }
+
+// Progress photo types
+export interface ProgressPhoto {
+  id: string;
+  imageData: string;
+  category: "front" | "side" | "back";
+  date: string;
+  notes?: string | null;
+  weightId?: string | null;
+  createdAt: string;
+}
+
+export interface PhotoComparison {
+  before: ProgressPhoto | null;
+  after: ProgressPhoto | null;
+  timeline: Array<{
+    id: string;
+    date: string;
+    imageData: string;
+  }>;
+  counts: {
+    front: number;
+    side: number;
+    back: number;
+    total: number;
+  };
+  hasSufficientPhotos: boolean;
+}

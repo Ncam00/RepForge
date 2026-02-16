@@ -17,6 +17,7 @@ model User {
 
   weights         Weight[]
   weightGoal      WeightGoal?
+  progressPhotos  ProgressPhoto[]
   workoutSplits   WorkoutSplit[]
   sessions        WorkoutSession[]
   exercises       Exercise[]
@@ -44,6 +45,23 @@ model Weight {
 
   @@index([userId, date])
   @@map("weights")
+}
+
+model ProgressPhoto {
+  id        String   @id @default(cuid())
+  userId    String
+  imageData String   // base64 encoded image
+  category  String   @default("front") // front, side, back
+  date      DateTime @default(now())
+  notes     String?
+  weightId  String?  // optional link to weight entry
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@index([userId, category])
+  @@map("progress_photos")
 }
 
 model WeightGoal {

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Dumbbell, TrendingUp, Library, History, LogOut, Settings, BookTemplate, BarChart3, Calendar, BookOpen, Users } from "lucide-react"
+import { Dumbbell, TrendingUp, Library, History, LogOut, Settings, BookTemplate, BarChart3, Calendar, BookOpen, Users, Camera } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import LevelBadge from "@/components/LevelBadge"
 import { cn } from "@/lib/utils"
@@ -20,6 +20,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
   const links = [
     { href: "/dashboard", label: "Overview", icon: Dumbbell },
     { href: "/dashboard/weight", label: "Weight", icon: TrendingUp },
+    { href: "/dashboard/photos", label: "Photos", icon: Camera },
     { href: "/dashboard/splits", label: "Splits", icon: Library },
     { href: "/dashboard/exercises", label: "Exercises", icon: Dumbbell },
     { href: "/dashboard/templates", label: "Templates", icon: BookTemplate },

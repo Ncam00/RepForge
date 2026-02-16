@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area, AreaChart, ComposedChart, Bar, BarChart } from "recharts"
 import { format, subDays, subMonths, differenceInDays } from "date-fns"
-import { Plus, Trash2, Download, Target, TrendingUp, TrendingDown, Camera, Image as ImageIcon, X } from "lucide-react"
+import { Plus, Trash2, Download, Target, TrendingUp, TrendingDown, Camera, Image as ImageIcon, X, Check } from "lucide-react"
 import { Weight } from "@/types/dashboard"
 
 interface WeightGoal {
@@ -52,6 +52,15 @@ export default function WeightPage() {
   const [targetWeight, setTargetWeight] = useState("")
   const [targetDate, setTargetDate] = useState("")
   const [chartMetric, setChartMetric] = useState<"weight" | "bodyFat" | "muscleMass">("weight")
+  const [goalSuccessMessage, setGoalSuccessMessage] = useState<string | null>(null)
+
+  // Auto-dismiss success message
+  useEffect(() => {
+    if (goalSuccessMessage) {
+      const timer = setTimeout(() => setGoalSuccessMessage(null), 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [goalSuccessMessage])
 
   const { data, isLoading } = useQuery({
     queryKey: ["weights"],
@@ -88,6 +97,7 @@ export default function WeightPage() {
       setMuscleMass("")
       setNotes("")
       setPhotoUrl("")
+      setGoalSuccessMessage("Weight logged successfully!")
     },
   })
 
@@ -106,6 +116,7 @@ export default function WeightPage() {
       setShowGoalForm(false)
       setTargetWeight("")
       setTargetDate("")
+      setGoalSuccessMessage("Goal set successfully! Track your progress below.")
     },
   })
 
@@ -346,6 +357,26 @@ export default function WeightPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Success Message */}
+      {goalSuccessMessage && (
+        <div className="flex items-center gap-3 p-4 bg-green-500/10 border border-green-500/30 rounded-lg animate-in slide-in-from-top-2 duration-300">
+          <div className="flex-shrink-0 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+            <Check className="h-5 w-5 text-white" />
+          </div>
+          <div className="flex-1">
+            <p className="font-medium text-green-700 dark:text-green-400">{goalSuccessMessage}</p>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-green-700 dark:text-green-400 hover:bg-green-500/20"
+            onClick={() => setGoalSuccessMessage(null)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
 
       {goal && (
         <Card className="border-primary">

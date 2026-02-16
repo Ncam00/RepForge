@@ -47,6 +47,7 @@ export default function WeightPage() {
   const [notes, setNotes] = useState("")
   const [photoUrl, setPhotoUrl] = useState("")
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const [entryDate, setEntryDate] = useState("")
   const [dateRange, setDateRange] = useState<"7d" | "30d" | "90d" | "all">("30d")
   const [showGoalForm, setShowGoalForm] = useState(false)
   const [targetWeight, setTargetWeight] = useState("")
@@ -98,6 +99,7 @@ export default function WeightPage() {
       setMuscleMass("")
       setNotes("")
       setPhotoUrl("")
+      setEntryDate("")
       setGoalSuccessMessage("Weight logged successfully!")
     },
   })
@@ -185,6 +187,7 @@ export default function WeightPage() {
       muscleMass: muscleMass ? parseFloat(muscleMass) : undefined,
       notes: notes || undefined,
       photoUrl: photoUrl || undefined,
+      date: entryDate ? new Date(entryDate).toISOString() : undefined,
     })
   }
 
@@ -503,6 +506,18 @@ export default function WeightPage() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-2">
+              <Label htmlFor="entryDate">Date</Label>
+              <Input
+                id="entryDate"
+                type="date"
+                value={entryDate}
+                onChange={(e) => setEntryDate(e.target.value)}
+              />
+              {!entryDate && (
+                <p className="text-xs text-muted-foreground">Defaults to today</p>
+              )}
+            </div>
             <div className="space-y-2">
               <Label htmlFor="weight">Weight *</Label>
               <Input

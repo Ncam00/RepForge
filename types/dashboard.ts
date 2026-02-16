@@ -230,6 +230,22 @@ export interface ExerciseStats {
   }[];
 }
 
+// Progressive overload suggestion types
+export interface OverloadSuggestion {
+  recommendedWeight: number;
+  recommendedReps: number;
+  confidence: "high" | "medium" | "low";
+  reason: string;
+  trend: "increasing" | "maintaining" | "decreasing" | "new";
+  lastPerformance: {
+    weight: number;
+    reps: number;
+    date: string;
+  } | null;
+  estimated1RM: number | null;
+  progressPercentage: number | null;
+}
+
 // Split types
 export interface SplitDay {
   name: string;

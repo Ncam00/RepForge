@@ -9,6 +9,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Plus, Trash2, Play, Square, Clock, Dumbbell, Timer, CheckCircle2, Trophy, Flame } from "lucide-react"
 import { format } from "date-fns"
 import { ExerciseSet, WorkoutSession, Exercise } from "@/types/dashboard"
+import OverloadSuggestionCard from "@/components/OverloadSuggestion"
 
 interface SetData {
   exerciseId: string;
@@ -329,6 +330,17 @@ function ActiveWorkout({ session }: { session: WorkoutSession }) {
               ))}
             </select>
           </div>
+
+          {/* Progressive Overload Suggestion */}
+          {selectedExerciseId && (
+            <OverloadSuggestionCard
+              exerciseId={selectedExerciseId}
+              onApplySuggestion={(suggestedWeight, suggestedReps) => {
+                setWeight(suggestedWeight)
+                setReps(suggestedReps)
+              }}
+            />
+          )}
 
           {/* Set Input Fields - Mobile Optimized */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

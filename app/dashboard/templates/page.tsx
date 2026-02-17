@@ -47,7 +47,7 @@ export default function TemplatesPage() {
     },
   });
 
-  const { data: exercises } = useQuery({
+  const { data: exercisesData } = useQuery({
     queryKey: ["exercises"],
     queryFn: async () => {
       const res = await fetch("/api/exercises");
@@ -55,6 +55,8 @@ export default function TemplatesPage() {
       return res.json();
     },
   });
+
+  const exercises = exercisesData?.exercises || [];
 
   const createTemplateMutation = useMutation({
     mutationFn: async (data: CreateTemplateData) => {

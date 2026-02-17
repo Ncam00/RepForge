@@ -419,3 +419,78 @@ model Challenge {
   @@index([userId, status])
   @@map("challenges")
 }
+
+// HealthKit / Apple Watch Integration
+
+model HealthKitDevice {
+  id         String   @id @default(cuid())
+  userId     String
+  deviceId   String
+  deviceName String?
+  lastSyncAt DateTime
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, deviceId])
+  @@index([userId])
+  @@map("healthkit_devices")
+}
+
+model HealthKitWorkout {
+  id                String   @id @default(cuid())
+  userId            String
+  externalId        String // HealthKit workout UUID
+  type              String // traditionalStrengthTraining, running, cycling, etc.
+  startDate         DateTime
+  endDate           DateTime
+  duration          Int // seconds
+  totalEnergyBurned Float? // calories
+  totalDistance     Float? // meters
+  averageHeartRate  Float?
+  maxHeartRate      Float?
+  metadata          String? // JSON
+  createdAt         DateTime @default(now())
+
+  @@unique([userId, externalId])
+  @@index([userId, startDate])
+  @@index([type])
+  @@map("healthkit_workouts")
+}
+
+model HeartRateSample {
+  id            String   @id @default(cuid())
+  userId        String
+  timestamp     DateTime
+  value         Int // bpm
+  motionContext String   @default("notSet") // sedentary, active, notSet
+  deviceId      String?
+  createdAt     DateTime @default(now())
+
+  @@unique([userId, timestamp])
+  @@index([userId, timestamp])
+  @@map("heart_rate_samples")
+}
+
+model EnergyRecord {
+  id       String   @id @default(cuid())
+  userId   String
+  date     DateTime
+  type     String // active, resting
+  calories Float
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date, type])
+  @@index([userId, date])
+  @@map("energy_records")
+}
+
+model StepRecord {
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime
+  steps     Int
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId, date])
+  @@map("step_records")
+}

@@ -103,10 +103,9 @@ export default function SettingsPage() {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       }
-    } catch (error) {
+    } catch {
       alert("Export failed. Please try again.");
     }
-  };
   };
 
   if (isLoading) {

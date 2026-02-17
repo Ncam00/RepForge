@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/db"
-import { getDevSession } from "@/auth"
+import prisma from "@/lib/db"
+import { getDevSession } from "@/lib/dev-auth"
 
 // Types for HealthKit data from Apple Watch
 interface HealthKitWorkout {
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
             }
           })
           results.workoutsProcessed++
-        } catch (error) {
+        } catch {
           results.errors.push(`Failed to process workout ${workout.id}`)
         }
       }
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
           skipDuplicates: true
         })
         results.heartRateSamplesProcessed = samples.length
-      } catch (error) {
+      } catch {
         results.errors.push("Failed to process heart rate samples")
       }
     }
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
             create: record
           })
           results.energyRecordsProcessed++
-        } catch (error) {
+        } catch {
           results.errors.push(`Failed to process energy record for ${record.date}`)
         }
       }
@@ -186,7 +186,7 @@ export async function POST(request: NextRequest) {
               steps: step.steps
             }
           })
-        } catch (error) {
+        } catch {
           results.errors.push(`Failed to process step count for ${step.date}`)
         }
       }
@@ -197,14 +197,14 @@ export async function POST(request: NextRequest) {
       message: "Sync completed",
       results
     })
-  } catch (error) {
+  } catch {
     console.error("HealthKit sync error:", error)
     return NextResponse.json({ error: "Failed to sync HealthKit data" }, { status: 500 })
   }
 }
 
 // GET - Get sync status and last synced data summary
-export async function GET(request: NextRequest) {
+export async function GET() {
   const session = await getDevSession()
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -267,7 +267,7 @@ export async function GET(request: NextRequest) {
         steps: todaySteps?.steps || 0
       }
     })
-  } catch (error) {
+  } catch {
     console.error("Error fetching HealthKit status:", error)
     return NextResponse.json({ error: "Failed to fetch sync status" }, { status: 500 })
   }

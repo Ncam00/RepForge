@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/db"
-import { getDevSession } from "@/auth"
+import prisma from "@/lib/db"
+import { getDevSession } from "@/lib/dev-auth"
 import { startOfDay, subDays, format } from "date-fns"
 
 // GET - Get activity data (energy burned, steps)

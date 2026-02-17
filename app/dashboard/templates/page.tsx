@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Copy, Play, Trash2, Edit, Share2, Clock, TrendingUp, X } from "lucide-react";
-import Link from "next/link";
+import { Plus, Copy, Play, Trash2, Edit, Clock, X } from "lucide-react";
 import { WorkoutTemplate, Exercise, TemplateExercise } from "@/types/dashboard";
 
 interface CreateTemplateData {
@@ -26,7 +25,6 @@ export default function TemplatesPage() {
   const queryClient = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [showPublic, setShowPublic] = useState(false);
 
   // Form state
@@ -499,7 +497,7 @@ export default function TemplatesPage() {
                 ))}
                 {selectedExercises.length === 0 && (
                   <p className="text-sm text-gray-500 text-center py-4">
-                    No exercises added yet. Click "+ Add Exercise" to start.
+                    No exercises added yet. Click &quot;+ Add Exercise&quot; to start.
                   </p>
                 )}
               </div>

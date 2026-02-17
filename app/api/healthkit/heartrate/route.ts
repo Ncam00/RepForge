@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/db"
-import { getDevSession } from "@/auth"
+import prisma from "@/lib/db"
+import { getDevSession } from "@/lib/dev-auth"
 
 // GET - Get heart rate data with optional time range
 export async function GET(request: NextRequest) {

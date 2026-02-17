@@ -114,7 +114,7 @@ export default function SettingsPage() {
         <section className="bg-white dark:bg-gray-900 p-6 rounded-lg border dark:border-gray-700 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <User className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-            <h2 className="text-xl font-semibold">Profile</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Profile</h2>
           </div>
           <div className="space-y-4">
             <div>
@@ -156,7 +156,7 @@ export default function SettingsPage() {
         <section className="bg-white dark:bg-gray-900 p-6 rounded-lg border dark:border-gray-700 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <Settings2 className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-            <h2 className="text-xl font-semibold">Preferences</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Preferences</h2>
           </div>
           <div className="space-y-4">
             <div>
@@ -188,8 +188,8 @@ export default function SettingsPage() {
                   }}
                   className={`flex items-center gap-2 px-4 py-2 rounded-md border ${
                     theme === "light"
-                      ? "bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
-                      : "border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+                      ? "bg-white border-blue-500 text-blue-700 shadow-sm"
+                      : "bg-white border-gray-300 text-gray-700 hover:border-gray-400"
                   }`}
                 >
                   <Sun className="w-4 h-4" />
@@ -203,8 +203,8 @@ export default function SettingsPage() {
                   }}
                   className={`flex items-center gap-2 px-4 py-2 rounded-md border ${
                     theme === "dark"
-                      ? "bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
-                      : "border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+                      ? "bg-gray-900 border-blue-500 text-blue-300 shadow-sm"
+                      : "bg-gray-900 border-gray-600 text-gray-300 hover:border-gray-500"
                   }`}
                 >
                   <Moon className="w-4 h-4" />
@@ -219,7 +219,7 @@ export default function SettingsPage() {
         <section className="bg-white dark:bg-gray-900 p-6 rounded-lg border dark:border-gray-700 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-            <h2 className="text-xl font-semibold">Notifications & Behavior</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Notifications & Behavior</h2>
           </div>
           <div className="space-y-4">
             <label className="flex items-center justify-between p-3 border dark:border-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
@@ -291,7 +291,7 @@ export default function SettingsPage() {
         <section className="bg-white dark:bg-gray-900 p-6 rounded-lg border dark:border-gray-700 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <Download className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-            <h2 className="text-xl font-semibold">Data Management</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Data Management</h2>
           </div>
           <div className="space-y-4">
             <div className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-md">

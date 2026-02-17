@@ -157,6 +157,27 @@ function ActiveWorkout({ session }: { session: WorkoutSession }) {
     },
   })
 
+  // Fetch recent exercises for quick selection
+  const { data: recentData } = useQuery({
+    queryKey: ["recentExercises"],
+    queryFn: async () => {
+      const res = await fetch("/api/exercises/history?limit=6")
+      if (!res.ok) throw new Error("Failed to fetch recent exercises")
+      return res.json()
+    },
+  })
+
+  // Fetch previous performance when exercise selected
+  const { data: previousPerformance } = useQuery({
+    queryKey: ["exerciseHistory", selectedExerciseId],
+    queryFn: async () => {
+      const res = await fetch(`/api/exercises/history?exerciseId=${selectedExerciseId}`)
+      if (!res.ok) throw new Error("Failed to fetch history")
+      return res.json()
+    },
+    enabled: !!selectedExerciseId,
+  })
+
   const addSetMutation = useMutation({
     mutationFn: async (setData: SetData) => {
       const res = await fetch(`/api/sessions/${session.id}/sets`, {
@@ -311,6 +332,26 @@ function ActiveWorkout({ session }: { session: WorkoutSession }) {
             />
           )}
 
+          {/* Recent Exercises - Quick Select */}
+          {recentData?.recentExercises?.length > 0 && !selectedExerciseId && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-muted-foreground">Recent Exercises</Label>
+              <div className="flex flex-wrap gap-2">
+                {recentData.recentExercises.slice(0, 6).map((ex: { id: string; name: string; useCount: number }) => (
+                  <button
+                    key={ex.id}
+                    onClick={() => setSelectedExerciseId(ex.id)}
+                    className="px-3 py-2 text-sm font-medium rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors flex items-center gap-2"
+                  >
+                    <Dumbbell className="h-3.5 w-3.5" />
+                    {ex.name}
+                    <span className="text-xs opacity-60">({ex.useCount})</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Exercise Selection */}
           <div className="space-y-3">
             <div className="flex items-baseline justify-between">
@@ -330,6 +371,52 @@ function ActiveWorkout({ session }: { session: WorkoutSession }) {
               ))}
             </select>
           </div>
+
+          {/* Previous Performance Display */}
+          {selectedExerciseId && previousPerformance?.lastSession?.sets?.length > 0 && (
+            <div className="rounded-xl bg-muted/50 border p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Last Workout</span>
+                  <span className="text-xs text-muted-foreground">
+                    ({previousPerformance.lastSession.date})
+                  </span>
+                </div>
+                {previousPerformance.bestSet && (
+                  <div className="flex items-center gap-1 text-xs text-amber-600">
+                    <Trophy className="h-3 w-3" />
+                    <span>Best: {previousPerformance.bestSet.weight}×{previousPerformance.bestSet.reps}</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {previousPerformance.lastSession.sets.map((set: { setNumber: number; weight: number; reps: number; rpe?: number }, idx: number) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      setWeight(set.weight || "")
+                      setReps(set.reps || "")
+                      if (set.rpe) setRpe(set.rpe)
+                    }}
+                    className="group px-3 py-2 rounded-lg bg-background border hover:border-primary hover:bg-primary/5 transition-all"
+                    title="Click to use these values"
+                  >
+                    <div className="text-sm font-semibold">
+                      {set.weight}<span className="text-muted-foreground font-normal"> × </span>{set.reps}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Set {set.setNumber}
+                      {set.rpe && <span> · RPE {set.rpe}</span>}
+                    </div>
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Tap a set to pre-fill those values
+              </p>
+            </div>
+          )}
 
           {/* Progressive Overload Suggestion */}
           {selectedExerciseId && (

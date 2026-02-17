@@ -10,6 +10,8 @@ import { Plus, Trash2, Play, Square, Clock, Dumbbell, Timer, CheckCircle2, Troph
 import { format } from "date-fns"
 import { ExerciseSet, WorkoutSession, Exercise } from "@/types/dashboard"
 import OverloadSuggestionCard from "@/components/OverloadSuggestion"
+import { PRCelebration } from "@/components/ui/pr-celebration"
+import { RestTimerWidget } from "@/components/ui/rest-timer"
 
 interface SetData {
   exerciseId: string;
@@ -32,77 +34,6 @@ interface SetResponse {
   set: ExerciseSet;
   prResults?: PRResult;
 }
-
-function RestTimer({ duration, onComplete }: { duration: number; onComplete: () => void }) {
-  const [remaining, setRemaining] = useState(duration)
-  const [isPaused, setIsPaused] = useState(false)
-
-  useEffect(() => {
-    if (remaining <= 0) {
-      // Play notification sound (if available)
-      try {
-        const audio = new Audio("data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJuGYF5wgYBpYV50c3ZfWWmJiJh2bHKBgHtpYmhoa2ZgYmpqZmBmaW5sZmVmanNvbGhqa2lpZWRjYGBhYWJiYmNkZGRlZWZmZ2doaWlqa2tsbG1tbm5vb3BwcHFxcXJycnNzc3R0dHV1dXZ2dnd3d3h4eHl5eXp6ent7e3x8fH19fX5+fn9/f4CAgIGBgYKCgoODg4SEhIWFhYaGhoeHh4iIiImJiYqKiouLi4yMjI2NjY6Ojo+Pj5CQkJGRkZKSkpOTk5SUlJWVlZaWlpeXl5iYmJmZmZqampubm5ycnJ2dnZ6enp+fn6CgoKGhoaKioqOjo6SkpKWlpaampqenp6ioqKmpqaqqqqurq6ysrK2tra6urq+vr7CwsLGxsbKysrOzs7S0tLW1tba2tre3t7i4uLm5ubq6uru7u7y8vL29vb6+vr+/v8DAwMHBwcLCwsPDw8TExMXFxcbGxsfHx8jIyMnJycrKysvLy8zMzM3Nzc7Ozs/Pz9DQ0NHR0dLS0tPT09TU1NXV1dbW1tfX19jY2NnZ2dra2tvb29zc3N3d3d7e3t/f3+Dg4OHh4eLi4uPj4+Tk5OXl5ebm5ufn5+jo6Onp6erq6uvr6+zs7O3t7e7u7u/v7/Dw8PHx8fLy8vPz8/T09PX19fb29vf39/j4+Pn5+fr6+vv7+/z8/P39/f7+/v///w==")
-        audio.volume = 0.5
-        audio.play().catch(() => {})
-      } catch (e) {}
-      onComplete()
-      return
-    }
-
-    if (isPaused) return
-
-    const timer = setInterval(() => {
-      setRemaining((prev) => prev - 1)
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [remaining, isPaused, onComplete])
-
-  const minutes = Math.floor(remaining / 60)
-  const seconds = remaining % 60
-  const progress = ((duration - remaining) / duration) * 100
-
-  return (
-    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border-2 border-primary/30 p-6">
-      {/* Progress bar background */}
-      <div 
-        className="absolute inset-0 bg-primary/10 transition-all duration-1000 ease-linear"
-        style={{ width: `${progress}%` }}
-      />
-      
-      <div className="relative z-10">
-        <div className="flex items-center justify-center gap-3 mb-3">
-          <div className="p-2 bg-primary/20 rounded-full animate-pulse">
-            <Timer className="h-6 w-6 text-primary" />
-          </div>
-          <span className="text-4xl font-bold tabular-nums tracking-tight">
-            {minutes}:{seconds.toString().padStart(2, "0")}
-          </span>
-        </div>
-        <p className="text-sm text-muted-foreground text-center mb-4">Rest time remaining</p>
-        <div className="flex gap-2 justify-center">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsPaused(!isPaused)}
-            className="min-w-[80px]"
-          >
-            {isPaused ? "Resume" : "Pause"}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onComplete}
-            className="min-w-[80px]"
-          >
-            Skip
-          </Button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 function SessionStats({ session }: { session: WorkoutSession }) {
   const totalVolume = session.sets.reduce((sum, set) => {
     return sum + ((set.weight || 0) * (set.reps || 0))
@@ -147,6 +78,11 @@ function ActiveWorkout({ session }: { session: WorkoutSession }) {
   const [isWarmup, setIsWarmup] = useState(false)
   const [notes, setNotes] = useState("")
   const [restTimerDuration, setRestTimerDuration] = useState<number | null>(null)
+  const [prCelebration, setPrCelebration] = useState<{ show: boolean; types: string[]; exerciseName: string }>({
+    show: false,
+    types: [],
+    exerciseName: "",
+  })
 
   const { data: exercises } = useQuery({
     queryKey: ["exercises"],
@@ -184,7 +120,8 @@ function ActiveWorkout({ session }: { session: WorkoutSession }) {
         if (data.prResults.maxReps) prTypes.push("Reps");
         
         if (prTypes.length > 0) {
-          alert(`🏆 New PR! ${prTypes.join(", ")} - Great job!`);
+          const exerciseName = exercises?.exercises?.find((e: Exercise) => e.id === selectedExerciseId)?.name || "Exercise";
+          setPrCelebration({ show: true, types: prTypes, exerciseName });
         }
       }
       
@@ -305,10 +242,33 @@ function ActiveWorkout({ session }: { session: WorkoutSession }) {
 
           {/* Rest Timer */}
           {restTimerDuration && (
-            <RestTimer
-              duration={restTimerDuration}
+            <RestTimerWidget
+              initialDuration={restTimerDuration}
               onComplete={() => setRestTimerDuration(null)}
+              onDismiss={() => setRestTimerDuration(null)}
+              showPresets={false}
             />
+          )}
+
+          {/* Manual Timer Start */}
+          {!restTimerDuration && session.sets.length > 0 && (
+            <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+              <Timer className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Start rest timer:</span>
+              <div className="flex gap-1 ml-auto">
+                {[60, 90, 120, 180].map((seconds) => (
+                  <Button
+                    key={seconds}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setRestTimerDuration(seconds)}
+                    className="h-7 px-2 text-xs"
+                  >
+                    {seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`}
+                  </Button>
+                ))}
+              </div>
+            </div>
           )}
 
           {/* Exercise Selection */}
@@ -494,6 +454,14 @@ function ActiveWorkout({ session }: { session: WorkoutSession }) {
           </CardContent>
         </Card>
       )}
+
+      {/* PR Celebration Modal */}
+      <PRCelebration
+        isOpen={prCelebration.show}
+        onClose={() => setPrCelebration({ show: false, types: [], exerciseName: "" })}
+        prTypes={prCelebration.types}
+        exerciseName={prCelebration.exerciseName}
+      />
     </div>
   )
 }

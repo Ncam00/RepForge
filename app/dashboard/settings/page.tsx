@@ -67,36 +67,44 @@ export default function SettingsPage() {
     },
   });
 
-  const exportDataMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch("/api/settings/export");
-      if (!res.ok) throw new Error("Failed to export data");
-      return res.json();
-    },
-    onSuccess: (data) => {
-      // Create download link
-      const blob = new Blob([JSON.stringify(data, null, 2)], {
-        type: "application/json",
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `repforge-data-${new Date().toISOString().split("T")[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    },
-  });
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     updateSettingsMutation.mutate(formData);
   };
 
-  const handleExport = () => {
-    if (confirm("Export all your data? This will download a JSON file.")) {
-      exportDataMutation.mutate();
+  const handleExport = async (format: "json" | "csv" = "json", type: string = "all") => {
+    try {
+      const res = await fetch(`/api/settings/export?format=${format}&type=${type}`);
+      if (!res.ok) throw new Error("Failed to export data");
+      
+      const date = new Date().toISOString().split("T")[0];
+      const filename = `repforge-${type}-${date}.${format}`;
+      
+      if (format === "csv") {
+        const text = await res.text();
+        const blob = new Blob([text], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } else {
+        const data = await res.json();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    } catch {
+      alert("Export failed. Please try again.");
     }
   };
 
@@ -300,24 +308,84 @@ export default function SettingsPage() {
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Data Management</h2>
           </div>
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-md">
-              <div>
-                <div className="font-medium text-gray-900 dark:text-gray-100">
-                  Export Your Data
-                </div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  Download all your workout data as JSON
+            {/* Export Options */}
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <div className="font-medium text-gray-900 dark:text-gray-100 mb-2">
+                Export Your Data
+              </div>
+              <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                Download your workout data in JSON or CSV format
+              </div>
+              
+              {/* JSON Exports */}
+              <div className="mb-4">
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">JSON Format (Full Data)</div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleExport("json", "all")}
+                    className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+                  >
+                    <Download className="w-3 h-3" />
+                    All Data
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleExport("json", "workouts")}
+                    className="flex items-center gap-2 px-3 py-2 bg-gray-600 text-white text-sm rounded-md hover:bg-gray-700"
+                  >
+                    <Download className="w-3 h-3" />
+                    Workouts
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleExport("json", "exercises")}
+                    className="flex items-center gap-2 px-3 py-2 bg-gray-600 text-white text-sm rounded-md hover:bg-gray-700"
+                  >
+                    <Download className="w-3 h-3" />
+                    Exercises
+                  </button>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={handleExport}
-                disabled={exportDataMutation.isPending}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Download className="w-4 h-4" />
-                {exportDataMutation.isPending ? "Exporting..." : "Export"}
-              </button>
+              
+              {/* CSV Exports */}
+              <div>
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">CSV Format (Spreadsheet Compatible)</div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleExport("csv", "workouts")}
+                    className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700"
+                  >
+                    <Download className="w-3 h-3" />
+                    Workouts
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleExport("csv", "sets")}
+                    className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700"
+                  >
+                    <Download className="w-3 h-3" />
+                    All Sets
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleExport("csv", "weights")}
+                    className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700"
+                  >
+                    <Download className="w-3 h-3" />
+                    Weight History
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleExport("csv", "prs")}
+                    className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700"
+                  >
+                    <Download className="w-3 h-3" />
+                    Personal Records
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div className="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-md">

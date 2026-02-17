@@ -1,6 +1,7 @@
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { DashboardNav } from "@/components/dashboard/nav"
+import { FloatingRestTimer } from "@/components/ui/rest-timer"
 
 export default async function DashboardLayout({
   children,
@@ -20,6 +21,7 @@ export default async function DashboardLayout({
     <div className="min-h-screen bg-background">
       <DashboardNav user={user} />
       <main className="container mx-auto px-4 py-8">{children}</main>
+      <FloatingRestTimer />
     </div>
   )
 }

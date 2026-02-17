@@ -65,7 +65,10 @@ export default function TemplatesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error("Failed to create template");
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: "Failed to create template" }));
+        throw new Error(error.error || "Failed to create template");
+      }
       return res.json();
     },
     onSuccess: () => {
@@ -73,6 +76,9 @@ export default function TemplatesPage() {
       setIsCreating(false);
       resetForm();
       alert("Template created successfully!");
+    },
+    onError: (error: Error) => {
+      alert(`Error: ${error.message}`);
     },
   });
 
@@ -115,6 +121,13 @@ export default function TemplatesPage() {
     e.preventDefault();
     if (!name || selectedExercises.length === 0) {
       alert("Please provide a name and add at least one exercise");
+      return;
+    }
+
+    // Validate all exercises have an exerciseId selected
+    const invalidExercise = selectedExercises.find(ex => !ex.exerciseId);
+    if (invalidExercise) {
+      alert("Please select an exercise for all items");
       return;
     }
 

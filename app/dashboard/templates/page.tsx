@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Copy, Play, Trash2, Edit, Share2, Clock, TrendingUp } from "lucide-react";
+import { Plus, Copy, Play, Trash2, Edit, Share2, Clock, TrendingUp, X } from "lucide-react";
 import Link from "next/link";
 import { WorkoutTemplate, Exercise, TemplateExercise } from "@/types/dashboard";
 
@@ -25,6 +25,7 @@ interface CreateTemplateData {
 export default function TemplatesPage() {
   const queryClient = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [showPublic, setShowPublic] = useState(false);
 
@@ -93,6 +94,64 @@ export default function TemplatesPage() {
     },
   });
 
+  const updateTemplateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: CreateTemplateData }) => {
+      const res = await fetch(`/api/templates/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: "Failed to update template" }));
+        throw new Error(error.error || "Failed to update template");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["templates"] });
+      setEditingTemplateId(null);
+      setIsCreating(false);
+      resetForm();
+      alert("Template updated successfully!");
+    },
+    onError: (error: Error) => {
+      alert(`Error: ${error.message}`);
+    },
+  });
+
+  const duplicateTemplateMutation = useMutation({
+    mutationFn: async (template: WorkoutTemplate) => {
+      const res = await fetch("/api/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: `${template.name} (Copy)`,
+          description: template.description,
+          category: template.category,
+          difficulty: template.difficulty,
+          duration: template.duration,
+          exercises: template.exercises?.map((ex: TemplateExercise, index: number) => ({
+            exerciseId: ex.exerciseId || ex.exercise?.id,
+            sets: ex.sets,
+            reps: ex.reps,
+            restTime: ex.restTime,
+            notes: ex.notes,
+            order: index,
+          })) || [],
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to duplicate template");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["templates"] });
+      alert("Template duplicated!");
+    },
+    onError: (error: Error) => {
+      alert(`Error: ${error.message}`);
+    },
+  });
+
   const startWorkoutMutation = useMutation({
     mutationFn: async (templateId: string) => {
       const res = await fetch("/api/templates/start", {
@@ -115,6 +174,26 @@ export default function TemplatesPage() {
     setDifficulty("beginner");
     setDuration("");
     setSelectedExercises([]);
+    setEditingTemplateId(null);
+  };
+
+  const loadTemplateForEdit = (template: WorkoutTemplate) => {
+    setEditingTemplateId(template.id);
+    setName(template.name);
+    setDescription(template.description || "");
+    setCategory(template.category || "");
+    setDifficulty(template.difficulty || "beginner");
+    setDuration(template.duration?.toString() || "");
+    setSelectedExercises(
+      template.exercises?.map((ex: TemplateExercise) => ({
+        exerciseId: ex.exerciseId || ex.exercise?.id || "",
+        sets: ex.sets || 3,
+        reps: ex.reps || "8-12",
+        restTime: ex.restTime || 90,
+        notes: ex.notes || "",
+      })) || []
+    );
+    setIsCreating(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -131,7 +210,7 @@ export default function TemplatesPage() {
       return;
     }
 
-    createTemplateMutation.mutate({
+    const templateData = {
       name,
       description,
       category: category || null,
@@ -141,7 +220,13 @@ export default function TemplatesPage() {
         ...ex,
         order: index,
       })),
-    });
+    };
+
+    if (editingTemplateId) {
+      updateTemplateMutation.mutate({ id: editingTemplateId, data: templateData });
+    } else {
+      createTemplateMutation.mutate(templateData);
+    }
   };
 
   const addExercise = () => {
@@ -172,7 +257,14 @@ export default function TemplatesPage() {
           </p>
         </div>
         <button
-          onClick={() => setIsCreating(!isCreating)}
+          onClick={() => {
+            if (isCreating) {
+              setIsCreating(false);
+              resetForm();
+            } else {
+              setIsCreating(true);
+            }
+          }}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
         >
           <Plus className="w-4 h-4" />
@@ -204,10 +296,24 @@ export default function TemplatesPage() {
         </button>
       </div>
 
-      {/* Create Form */}
+      {/* Create/Edit Form */}
       {isCreating && (
         <div className="bg-white p-6 rounded-lg border shadow-sm">
-          <h2 className="text-xl font-semibold mb-4">Create New Template</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">
+              {editingTemplateId ? "Edit Template" : "Create New Template"}
+            </h2>
+            <button
+              type="button"
+              onClick={() => {
+                setIsCreating(false);
+                resetForm();
+              }}
+              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -402,12 +508,12 @@ export default function TemplatesPage() {
             <div className="flex gap-3 pt-4">
               <button
                 type="submit"
-                disabled={createTemplateMutation.isPending}
+                disabled={createTemplateMutation.isPending || updateTemplateMutation.isPending}
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
               >
-                {createTemplateMutation.isPending
-                  ? "Creating..."
-                  : "Create Template"}
+                {editingTemplateId
+                  ? (updateTemplateMutation.isPending ? "Saving..." : "Save Changes")
+                  : (createTemplateMutation.isPending ? "Creating..." : "Create Template")}
               </button>
               <button
                 type="button"
@@ -516,19 +622,47 @@ export default function TemplatesPage() {
                   Start
                 </button>
                 {!showPublic && (
+                  <>
+                    <button
+                      onClick={() => loadTemplateForEdit(template)}
+                      className="p-2 border border-gray-300 rounded-md hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                      title="Edit template"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => duplicateTemplateMutation.mutate(template)}
+                      disabled={duplicateTemplateMutation.isPending}
+                      className="p-2 border border-gray-300 rounded-md hover:bg-purple-50 hover:border-purple-300 hover:text-purple-600 disabled:opacity-50"
+                      title="Duplicate template"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (
+                          confirm(
+                            `Delete template "${template.name}"? This cannot be undone.`
+                          )
+                        ) {
+                          deleteTemplateMutation.mutate(template.id);
+                        }
+                      }}
+                      className="p-2 border border-gray-300 rounded-md hover:bg-red-50 hover:border-red-300 hover:text-red-600"
+                      title="Delete template"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
+                {showPublic && (
                   <button
-                    onClick={() => {
-                      if (
-                        confirm(
-                          `Delete template "${template.name}"? This cannot be undone.`
-                        )
-                      ) {
-                        deleteTemplateMutation.mutate(template.id);
-                      }
-                    }}
-                    className="p-2 border border-gray-300 rounded-md hover:bg-red-50 hover:border-red-300 hover:text-red-600"
+                    onClick={() => duplicateTemplateMutation.mutate(template)}
+                    disabled={duplicateTemplateMutation.isPending}
+                    className="p-2 border border-gray-300 rounded-md hover:bg-purple-50 hover:border-purple-300 hover:text-purple-600 disabled:opacity-50"
+                    title="Copy to my templates"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Copy className="w-4 h-4" />
                   </button>
                 )}
               </div>

@@ -9,7 +9,13 @@ import { User, Moon, Sun, Bell, Download, Save, Settings2 } from "lucide-react";
 export default function SettingsPage() {
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const queryClient = useQueryClient();
+
+  // Avoid hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ["settings"],
@@ -187,7 +193,7 @@ export default function SettingsPage() {
                     setFormData({ ...formData, theme: "light" });
                   }}
                   className={`flex items-center gap-2 px-4 py-2 rounded-md border ${
-                    theme === "light"
+                    mounted && theme === "light"
                       ? "bg-white border-blue-500 text-blue-700 shadow-sm"
                       : "bg-white border-gray-300 text-gray-700 hover:border-gray-400"
                   }`}
@@ -202,7 +208,7 @@ export default function SettingsPage() {
                     setFormData({ ...formData, theme: "dark" });
                   }}
                   className={`flex items-center gap-2 px-4 py-2 rounded-md border ${
-                    theme === "dark"
+                    mounted && theme === "dark"
                       ? "bg-gray-900 border-blue-500 text-blue-300 shadow-sm"
                       : "bg-gray-900 border-gray-600 text-gray-300 hover:border-gray-500"
                   }`}

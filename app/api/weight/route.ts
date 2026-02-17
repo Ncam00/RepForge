@@ -59,18 +59,61 @@ export async function POST(req: Request) {
     const body = await req.json()
     const data = weightSchema.parse(body)
 
-    const weight = await prisma.weight.create({
-      data: {
+    // Normalize to start of day for comparison (using UTC)
+    const entryDate = data.date ? new Date(data.date) : new Date()
+    const startOfDay = new Date(Date.UTC(
+      entryDate.getUTCFullYear(),
+      entryDate.getUTCMonth(),
+      entryDate.getUTCDate(),
+      0, 0, 0, 0
+    ))
+    const endOfDay = new Date(Date.UTC(
+      entryDate.getUTCFullYear(),
+      entryDate.getUTCMonth(),
+      entryDate.getUTCDate(),
+      23, 59, 59, 999
+    ))
+
+    // Check if entry exists for this date
+    const existingEntry = await prisma.weight.findFirst({
+      where: {
         userId: session.user.id,
-        weight: data.weight,
-        unit: data.unit,
-        bodyFat: data.bodyFat,
-        muscleMass: data.muscleMass,
-        date: data.date ? new Date(data.date) : new Date(),
-        notes: data.notes,
-        photoUrl: data.photoUrl,
+        date: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
       },
     })
+
+    let weight
+    if (existingEntry) {
+      // Update existing entry
+      weight = await prisma.weight.update({
+        where: { id: existingEntry.id },
+        data: {
+          weight: data.weight,
+          unit: data.unit,
+          bodyFat: data.bodyFat,
+          muscleMass: data.muscleMass,
+          notes: data.notes,
+          photoUrl: data.photoUrl,
+        },
+      })
+    } else {
+      // Create new entry with normalized date (midnight UTC)
+      weight = await prisma.weight.create({
+        data: {
+          userId: session.user.id,
+          weight: data.weight,
+          unit: data.unit,
+          bodyFat: data.bodyFat,
+          muscleMass: data.muscleMass,
+          date: startOfDay,
+          notes: data.notes,
+          photoUrl: data.photoUrl,
+        },
+      })
+    }
 
     return NextResponse.json({ weight }, { status: 201 })
   } catch (error) {

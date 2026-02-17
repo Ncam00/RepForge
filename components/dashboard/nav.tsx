@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Dumbbell, TrendingUp, Library, History, LogOut, Settings, BookTemplate, BarChart3, Calendar, BookOpen, Users, Camera } from "lucide-react"
+import { Dumbbell, TrendingUp, Library, History, LogOut, Settings, BookTemplate, BarChart3, Calendar, BookOpen, Users, Camera, Trophy } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import LevelBadge from "@/components/LevelBadge"
 import { cn } from "@/lib/utils"
@@ -25,6 +25,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
     { href: "/dashboard/exercises", label: "Exercises", icon: Dumbbell },
     { href: "/dashboard/templates", label: "Templates", icon: BookTemplate },
     { href: "/dashboard/history", label: "History", icon: History },
+    { href: "/dashboard/prs", label: "PRs", icon: Trophy },
     { href: "/dashboard/calendar", label: "Calendar", icon: Calendar },
     { href: "/dashboard/journal", label: "Journal", icon: BookOpen },
     { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
@@ -61,7 +62,6 @@ export function DashboardNav({ user }: DashboardNavProps) {
               })}
             </div>
           </div>
-            <LevelBadge />
           <div className="flex items-center gap-4">
             <LevelBadge />
             <div className="text-sm">

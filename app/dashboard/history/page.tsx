@@ -10,6 +10,7 @@ import { Plus, Trash2, Play, Square, Clock, Dumbbell, Timer, CheckCircle2, Troph
 import { format } from "date-fns"
 import { ExerciseSet, WorkoutSession, Exercise } from "@/types/dashboard"
 import OverloadSuggestionCard from "@/components/OverloadSuggestion"
+import { PRCelebration } from "@/components/ui/pr-celebration"
 
 interface SetData {
   exerciseId: string;
@@ -147,6 +148,11 @@ function ActiveWorkout({ session }: { session: WorkoutSession }) {
   const [isWarmup, setIsWarmup] = useState(false)
   const [notes, setNotes] = useState("")
   const [restTimerDuration, setRestTimerDuration] = useState<number | null>(null)
+  const [prCelebration, setPrCelebration] = useState<{ show: boolean; types: string[]; exerciseName: string }>({
+    show: false,
+    types: [],
+    exerciseName: "",
+  })
 
   const { data: exercises } = useQuery({
     queryKey: ["exercises"],
@@ -184,7 +190,8 @@ function ActiveWorkout({ session }: { session: WorkoutSession }) {
         if (data.prResults.maxReps) prTypes.push("Reps");
         
         if (prTypes.length > 0) {
-          alert(`🏆 New PR! ${prTypes.join(", ")} - Great job!`);
+          const exerciseName = exercises?.exercises?.find((e: Exercise) => e.id === selectedExerciseId)?.name || "Exercise";
+          setPrCelebration({ show: true, types: prTypes, exerciseName });
         }
       }
       
@@ -494,6 +501,14 @@ function ActiveWorkout({ session }: { session: WorkoutSession }) {
           </CardContent>
         </Card>
       )}
+
+      {/* PR Celebration Modal */}
+      <PRCelebration
+        isOpen={prCelebration.show}
+        onClose={() => setPrCelebration({ show: false, types: [], exerciseName: "" })}
+        prTypes={prCelebration.types}
+        exerciseName={prCelebration.exerciseName}
+      />
     </div>
   )
 }

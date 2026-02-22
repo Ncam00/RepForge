@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { 
   Plus, Trash2, CheckCircle2, Circle, Edit, X, Save, Dumbbell, Clock, 
-  ChevronDown, ChevronUp, Play, Search, ArrowLeft, Settings2, Check, Copy
+  ChevronDown, ChevronUp, Play, Search, ArrowLeft, Settings2, Check, Copy,
+  ArrowUp, ArrowDown, Download
 } from "lucide-react"
 
 // Types
@@ -568,6 +569,7 @@ export default function TrainingPage() {
   const [splitDays, setSplitDays] = useState<SplitDayInput[]>([])
   const [exerciseSearch, setExerciseSearch] = useState("")
   const [expandedDayIndex, setExpandedDayIndex] = useState<number | null>(null)
+  const [importingTemplateForDay, setImportingTemplateForDay] = useState<number | null>(null)
   
   // Template state
   const [showPublicTemplates, setShowPublicTemplates] = useState(false)
@@ -612,7 +614,7 @@ export default function TrainingPage() {
       if (!res.ok) throw new Error("Failed to fetch templates")
       return res.json()
     },
-    enabled: activeTab === "templates",
+    enabled: activeTab === "templates" || isCreating, // Also fetch when creating a program for import
   })
 
   const templates: WorkoutTemplate[] = templatesData || []
@@ -924,6 +926,47 @@ export default function TrainingPage() {
       e.exerciseId === exerciseId ? { ...e, [field]: value } : e
     )
     setSplitDays(updated)
+  }
+
+  // Move exercise up or down within a day
+  const handleMoveExerciseInDay = (dayIndex: number, exerciseIndex: number, direction: 'up' | 'down') => {
+    const updated = [...splitDays]
+    const exercises = [...(updated[dayIndex].exercises || [])]
+    const newIndex = direction === 'up' ? exerciseIndex - 1 : exerciseIndex + 1
+    
+    if (newIndex < 0 || newIndex >= exercises.length) return
+    
+    // Swap exercises
+    const temp = exercises[exerciseIndex]
+    exercises[exerciseIndex] = exercises[newIndex]
+    exercises[newIndex] = temp
+    
+    updated[dayIndex].exercises = exercises
+    setSplitDays(updated)
+  }
+
+  // Import exercises from a saved template into a day
+  const handleImportFromTemplate = (dayIndex: number, template: WorkoutTemplate) => {
+    const updated = [...splitDays]
+    const currentExercises = updated[dayIndex].exercises || []
+    
+    // Map template exercises to day exercise format
+    const templateExercises = (template.exercises || []).map(ex => ({
+      exerciseId: ex.exerciseId || ex.exercise?.id || '',
+      exerciseName: ex.exercise?.name || 'Unknown Exercise',
+      targetSets: ex.sets,
+      targetReps: ex.reps,
+      restTime: ex.restTime,
+      notes: ex.notes,
+    })).filter(ex => ex.exerciseId) // Filter out invalid entries
+    
+    // Merge with existing, avoiding duplicates
+    const existingIds = new Set(currentExercises.map(e => e.exerciseId))
+    const newExercises = templateExercises.filter(ex => !existingIds.has(ex.exerciseId))
+    
+    updated[dayIndex].exercises = [...currentExercises, ...newExercises]
+    setSplitDays(updated)
+    setImportingTemplateForDay(null) // Close dropdown
   }
 
   const handleCreateSplit = () => {
@@ -1255,8 +1298,29 @@ export default function TrainingPage() {
                           {day.exercises && day.exercises.length > 0 && (
                             <div className="space-y-2">
                               <Label className="text-sm text-muted-foreground">Selected Exercises</Label>
-                              {day.exercises.map((exercise) => (
+                              {day.exercises.map((exercise, exIndex) => (
                                 <div key={exercise.exerciseId} className="flex items-center gap-2 p-2 bg-muted rounded">
+                                  {/* Reorder buttons */}
+                                  <div className="flex flex-col">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-5 w-5"
+                                      onClick={() => handleMoveExerciseInDay(index, exIndex, 'up')}
+                                      disabled={exIndex === 0}
+                                    >
+                                      <ArrowUp className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-5 w-5"
+                                      onClick={() => handleMoveExerciseInDay(index, exIndex, 'down')}
+                                      disabled={exIndex === (day.exercises?.length || 0) - 1}
+                                    >
+                                      <ArrowDown className="h-3 w-3" />
+                                    </Button>
+                                  </div>
                                   <span className="flex-1 font-medium">{exercise.exerciseName}</span>
                                   <Input
                                     type="number"
@@ -1281,6 +1345,41 @@ export default function TrainingPage() {
                                   </Button>
                                 </div>
                               ))}
+                            </div>
+                          )}
+                          
+                          {/* Import from Template */}
+                          {templates.length > 0 && (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <Label className="text-sm text-muted-foreground">Import from Template</Label>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setImportingTemplateForDay(importingTemplateForDay === index ? null : index)}
+                                >
+                                  <Download className="h-4 w-4 mr-2" />
+                                  Import
+                                </Button>
+                              </div>
+                              {importingTemplateForDay === index && (
+                                <div className="grid gap-1 max-h-32 overflow-y-auto border rounded p-2">
+                                  {templates.map(template => (
+                                    <Button
+                                      key={template.id}
+                                      variant="ghost"
+                                      size="sm"
+                                      className="justify-start"
+                                      onClick={() => handleImportFromTemplate(index, template)}
+                                    >
+                                      <span className="truncate">{template.name}</span>
+                                      <span className="text-xs text-muted-foreground ml-2">
+                                        ({template.exercises?.length || 0} exercises)
+                                      </span>
+                                    </Button>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           )}
                           

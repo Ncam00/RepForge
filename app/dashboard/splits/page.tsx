@@ -6,8 +6,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { Plus, Trash2, CheckCircle2, Circle, Edit, X, Save, Dumbbell, Clock } from "lucide-react"
+import { 
+  Plus, Trash2, CheckCircle2, Circle, Edit, X, Save, Dumbbell, Clock, 
+  ChevronDown, ChevronUp, Play, Search, ArrowLeft, Settings2
+} from "lucide-react"
 
+// Types
 type Exercise = {
   id: string
   name: string
@@ -45,33 +49,28 @@ type WorkoutSplit = {
   days: SplitDay[]
 }
 
-interface AddExerciseData {
-  exerciseId: string;
-  order?: number;
-  targetSets?: number;
-  targetReps?: string;
-  restTime?: number;
-  notes?: string;
-}
-
-interface UpdateExerciseData {
-  order?: number;
-  targetSets?: number | null;
-  targetReps?: string | null;
-  restTime?: number | null;
-  notes?: string | null;
-}
-
 interface SplitDayInput {
-  dayOfWeek: number;
-  name: string;
-  description?: string;
-  order?: number;
+  dayOfWeek: number
+  name: string
+  description?: string
+  order?: number
 }
 
 const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
-function DayExerciseManager({ splitDayId }: { splitDayId: string }) {
+const MUSCLE_GROUPS = [
+  "abs", "back", "biceps", "calves", "chest", "glutes",
+  "hamstrings", "quads", "shoulders", "traps", "triceps"
+]
+
+// Component for managing exercises within a selected day
+function DayExerciseManager({ 
+  splitDay, 
+  onClose 
+}: { 
+  splitDay: SplitDay
+  onClose: () => void 
+}) {
   const queryClient = useQueryClient()
   const [isAddingExercise, setIsAddingExercise] = useState(false)
   const [selectedExerciseId, setSelectedExerciseId] = useState("")
@@ -80,13 +79,15 @@ function DayExerciseManager({ splitDayId }: { splitDayId: string }) {
   const [restTime, setRestTime] = useState<number | "">("")
   const [notes, setNotes] = useState("")
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editData, setEditData] = useState<any>({})
+  const [editData, setEditData] = useState<Record<string, unknown>>({})
+  const [searchTerm, setSearchTerm] = useState("")
+  const [filterMuscle, setFilterMuscle] = useState("")
 
   // Fetch exercises for this split day
   const { data: dayExercises } = useQuery({
-    queryKey: ["splitDayExercises", splitDayId],
+    queryKey: ["splitDayExercises", splitDay.id],
     queryFn: async () => {
-      const res = await fetch(`/api/splits/${splitDayId}/exercises`)
+      const res = await fetch(`/api/splits/${splitDay.id}/exercises`)
       if (!res.ok) throw new Error("Failed to fetch exercises")
       return res.json()
     },
@@ -94,17 +95,20 @@ function DayExerciseManager({ splitDayId }: { splitDayId: string }) {
 
   // Fetch all available exercises
   const { data: allExercises } = useQuery({
-    queryKey: ["exercises"],
+    queryKey: ["exercises", searchTerm, filterMuscle],
     queryFn: async () => {
-      const res = await fetch("/api/exercises")
+      const params = new URLSearchParams()
+      if (searchTerm) params.append("search", searchTerm)
+      if (filterMuscle) params.append("muscleGroup", filterMuscle)
+      const res = await fetch(`/api/exercises?${params}`)
       if (!res.ok) throw new Error("Failed to fetch exercises")
       return res.json()
     },
   })
 
   const addExerciseMutation = useMutation({
-    mutationFn: async (data: AddExerciseData) => {
-      const res = await fetch(`/api/splits/${splitDayId}/exercises`, {
+    mutationFn: async (data: { exerciseId: string; targetSets?: number; targetReps?: string; restTime?: number; notes?: string }) => {
+      const res = await fetch(`/api/splits/${splitDay.id}/exercises`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -113,18 +117,15 @@ function DayExerciseManager({ splitDayId }: { splitDayId: string }) {
       return res.json()
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["splitDayExercises", splitDayId] })
+      queryClient.invalidateQueries({ queryKey: ["splitDayExercises", splitDay.id] })
+      queryClient.invalidateQueries({ queryKey: ["splits"] })
       setIsAddingExercise(false)
-      setSelectedExerciseId("")
-      setTargetSets("")
-      setTargetReps("")
-      setRestTime("")
-      setNotes("")
+      resetForm()
     },
   })
 
   const updateExerciseMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: UpdateExerciseData }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Record<string, unknown> }) => {
       const res = await fetch(`/api/splits/exercises/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -134,7 +135,8 @@ function DayExerciseManager({ splitDayId }: { splitDayId: string }) {
       return res.json()
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["splitDayExercises", splitDayId] })
+      queryClient.invalidateQueries({ queryKey: ["splitDayExercises", splitDay.id] })
+      queryClient.invalidateQueries({ queryKey: ["splits"] })
       setEditingId(null)
       setEditData({})
     },
@@ -149,13 +151,23 @@ function DayExerciseManager({ splitDayId }: { splitDayId: string }) {
       return res.json()
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["splitDayExercises", splitDayId] })
+      queryClient.invalidateQueries({ queryKey: ["splitDayExercises", splitDay.id] })
+      queryClient.invalidateQueries({ queryKey: ["splits"] })
     },
   })
 
+  const resetForm = () => {
+    setSelectedExerciseId("")
+    setTargetSets("")
+    setTargetReps("")
+    setRestTime("")
+    setNotes("")
+    setSearchTerm("")
+    setFilterMuscle("")
+  }
+
   const handleAddExercise = () => {
     if (!selectedExerciseId) return
-
     addExerciseMutation.mutate({
       exerciseId: selectedExerciseId,
       targetSets: targetSets || undefined,
@@ -165,40 +177,257 @@ function DayExerciseManager({ splitDayId }: { splitDayId: string }) {
     })
   }
 
-  const handleUpdateExercise = (id: string) => {
-    updateExerciseMutation.mutate({ id, data: editData })
-  }
-
   const exercises: SplitDayExercise[] = dayExercises || []
   const availableExercises: Exercise[] = allExercises?.exercises || []
 
   return (
-    <div className="space-y-3 mt-3">
-      {exercises.length > 0 && (
-        <div className="space-y-2">
-          {exercises.map((ex) => (
-            <div key={ex.id} className="p-3 rounded-lg border bg-muted/50">
-              {editingId === ex.id ? (
-                <div className="space-y-2">
-                  <div className="font-medium">{ex.exercise.name}</div>
-                  <div className="grid grid-cols-3 gap-2">
+    <div className="fixed inset-0 bg-background z-50 overflow-auto">
+      <div className="container mx-auto px-4 py-6 max-w-4xl">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={onClose}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold">{splitDay.name}</h1>
+              {splitDay.description && (
+                <p className="text-muted-foreground">{splitDay.description}</p>
+              )}
+            </div>
+          </div>
+          <Button size="lg" className="bg-green-600 hover:bg-green-700">
+            <Play className="mr-2 h-5 w-5" />
+            Start Workout
+          </Button>
+        </div>
+
+        {/* Current Exercises */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Dumbbell className="h-5 w-5" />
+              Exercises ({exercises.length})
+            </CardTitle>
+            <CardDescription>
+              Exercises planned for this training day
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {exercises.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Dumbbell className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>No exercises added yet</p>
+                <p className="text-sm">Add exercises from the library below</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {exercises.map((ex, index) => (
+                  <div key={ex.id} className="p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                    {editingId === ex.id ? (
+                      <div className="space-y-3">
+                        <div className="font-medium text-lg">{ex.exercise.name}</div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <div>
+                            <Label className="text-xs">Sets</Label>
+                            <Input
+                              type="number"
+                              placeholder="3"
+                              value={(editData.targetSets as number) ?? ex.targetSets ?? ""}
+                              onChange={(e) => setEditData({ ...editData, targetSets: parseInt(e.target.value) || undefined })}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Reps</Label>
+                            <Input
+                              placeholder="8-12"
+                              value={(editData.targetReps as string) ?? ex.targetReps ?? ""}
+                              onChange={(e) => setEditData({ ...editData, targetReps: e.target.value })}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Rest (sec)</Label>
+                            <Input
+                              type="number"
+                              placeholder="90"
+                              value={(editData.restTime as number) ?? ex.restTime ?? ""}
+                              onChange={(e) => setEditData({ ...editData, restTime: parseInt(e.target.value) || undefined })}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Notes</Label>
+                            <Input
+                              placeholder="Focus on form"
+                              value={(editData.notes as string) ?? ex.notes ?? ""}
+                              onChange={(e) => setEditData({ ...editData, notes: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={() => updateExerciseMutation.mutate({ id: ex.id, data: editData })}>
+                            <Save className="h-4 w-4 mr-1" />
+                            Save
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => { setEditingId(null); setEditData({}) }}>
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
+                            {index + 1}
+                          </div>
+                          <div>
+                            <div className="font-medium">{ex.exercise.name}</div>
+                            <div className="flex gap-3 text-sm text-muted-foreground mt-1">
+                              {ex.targetSets && <span>{ex.targetSets} sets</span>}
+                              {ex.targetReps && <span>{ex.targetReps} reps</span>}
+                              {ex.restTime && (
+                                <span className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {ex.restTime}s rest
+                                </span>
+                              )}
+                            </div>
+                            {ex.notes && (
+                              <div className="text-sm text-muted-foreground italic mt-1">{ex.notes}</div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setEditingId(ex.id)
+                              setEditData({
+                                targetSets: ex.targetSets,
+                                targetReps: ex.targetReps,
+                                restTime: ex.restTime,
+                                notes: ex.notes,
+                              })
+                            }}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeExerciseMutation.mutate(ex.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Add Exercise Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Add Exercise</span>
+              {!isAddingExercise && (
+                <Button onClick={() => setIsAddingExercise(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Browse Library
+                </Button>
+              )}
+            </CardTitle>
+          </CardHeader>
+          {isAddingExercise && (
+            <CardContent className="space-y-4">
+              {/* Search and Filter */}
+              <div className="flex gap-3">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search exercises..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <select
+                  className="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
+                  value={filterMuscle}
+                  onChange={(e) => setFilterMuscle(e.target.value)}
+                >
+                  <option value="">All Muscles</option>
+                  {MUSCLE_GROUPS.map((muscle) => (
+                    <option key={muscle} value={muscle}>
+                      {muscle.charAt(0).toUpperCase() + muscle.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Exercise Selection */}
+              <div className="border rounded-lg max-h-64 overflow-y-auto">
+                {availableExercises.length === 0 ? (
+                  <div className="p-4 text-center text-muted-foreground">
+                    No exercises found
+                  </div>
+                ) : (
+                  availableExercises.map((ex) => {
+                    let muscles: string[] = []
+                    try {
+                      muscles = JSON.parse(ex.muscleGroups)
+                    } catch {
+                      muscles = ex.muscleGroups ? [ex.muscleGroups] : []
+                    }
+                    const isSelected = selectedExerciseId === ex.id
+                    
+                    return (
+                      <div
+                        key={ex.id}
+                        className={`p-3 border-b last:border-b-0 cursor-pointer hover:bg-accent/50 transition-colors ${
+                          isSelected ? "bg-primary/10 border-l-4 border-l-primary" : ""
+                        }`}
+                        onClick={() => setSelectedExerciseId(isSelected ? "" : ex.id)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-medium">{ex.name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {muscles.join(", ")} {ex.equipment && `• ${ex.equipment}`}
+                            </div>
+                          </div>
+                          {isSelected && <CheckCircle2 className="h-5 w-5 text-primary" />}
+                        </div>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+
+              {/* Sets/Reps Configuration */}
+              {selectedExerciseId && (
+                <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+                  <div className="font-medium">Configure Exercise</div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <div>
                       <Label className="text-xs">Sets</Label>
                       <Input
                         type="number"
                         placeholder="3"
-                        value={editData.targetSets ?? ex.targetSets ?? ""}
-                        onChange={(e) => setEditData({ ...editData, targetSets: parseInt(e.target.value) || undefined })}
-                        className="h-8"
+                        value={targetSets}
+                        onChange={(e) => setTargetSets(parseInt(e.target.value) || "")}
                       />
                     </div>
                     <div>
                       <Label className="text-xs">Reps</Label>
                       <Input
                         placeholder="8-12"
-                        value={editData.targetReps ?? ex.targetReps ?? ""}
-                        onChange={(e) => setEditData({ ...editData, targetReps: e.target.value })}
-                        className="h-8"
+                        value={targetReps}
+                        onChange={(e) => setTargetReps(e.target.value)}
                       />
                     </div>
                     <div>
@@ -206,194 +435,58 @@ function DayExerciseManager({ splitDayId }: { splitDayId: string }) {
                       <Input
                         type="number"
                         placeholder="90"
-                        value={editData.restTime ?? ex.restTime ?? ""}
-                        onChange={(e) => setEditData({ ...editData, restTime: parseInt(e.target.value) || undefined })}
-                        className="h-8"
+                        value={restTime}
+                        onChange={(e) => setRestTime(parseInt(e.target.value) || "")}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Notes</Label>
+                      <Input
+                        placeholder="Optional notes"
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
                       />
                     </div>
                   </div>
-                  <div>
-                    <Label className="text-xs">Notes</Label>
-                    <Input
-                      placeholder="Focus on form"
-                      value={editData.notes ?? ex.notes ?? ""}
-                      onChange={(e) => setEditData({ ...editData, notes: e.target.value })}
-                      className="h-8"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={() => handleUpdateExercise(ex.id)}>
-                      <Save className="h-3 w-3 mr-1" />
-                      Save
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>
-                      Cancel
-                    </Button>
-                  </div>
                 </div>
-              ) : (
-                <>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="font-medium">{ex.exercise.name}</div>
-                      <div className="flex gap-4 text-sm text-muted-foreground mt-1">
-                        {ex.targetSets && <span>{ex.targetSets} sets</span>}
-                        {ex.targetReps && <span>{ex.targetReps} reps</span>}
-                        {ex.restTime && (
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {ex.restTime}s
-                          </span>
-                        )}
-                      </div>
-                      {ex.notes && (
-                        <div className="text-sm text-muted-foreground mt-1 italic">
-                          {ex.notes}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setEditingId(ex.id)
-                          setEditData({
-                            targetSets: ex.targetSets,
-                            targetReps: ex.targetReps,
-                            restTime: ex.restTime,
-                            notes: ex.notes,
-                          })
-                        }}
-                      >
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeExerciseMutation.mutate(ex.id)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                </>
               )}
-            </div>
-          ))}
-        </div>
-      )}
 
-      {isAddingExercise ? (
-        <div className="p-3 rounded-lg border bg-card space-y-3">
-          <div className="space-y-2">
-            <Label>Select Exercise</Label>
-            <select
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-              value={selectedExerciseId}
-              onChange={(e) => setSelectedExerciseId(e.target.value)}
-            >
-              <option value="">Choose an exercise...</option>
-              {availableExercises.map((ex) => {
-                let muscles = [];
-                try {
-                  muscles = JSON.parse(ex.muscleGroups);
-                } catch {
-                  muscles = [];
-                }
-                return (
-                  <option key={ex.id} value={ex.id}>
-                    {ex.name} {muscles.length > 0 ? `(${muscles.join(", ")})` : ""}
-                  </option>
-                );
-              })}
-            </select>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            <div>
-              <Label className="text-xs">Target Sets</Label>
-              <Input
-                type="number"
-                placeholder="3"
-                value={targetSets}
-                onChange={(e) => setTargetSets(parseInt(e.target.value) || "")}
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Target Reps</Label>
-              <Input
-                placeholder="8-12"
-                value={targetReps}
-                onChange={(e) => setTargetReps(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Rest (sec)</Label>
-              <Input
-                type="number"
-                placeholder="90"
-                value={restTime}
-                onChange={(e) => setRestTime(parseInt(e.target.value) || "")}
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label className="text-xs">Notes (optional)</Label>
-            <Input
-              placeholder="Focus on form, slow negatives, etc."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
-          </div>
-
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              onClick={handleAddExercise}
-              disabled={!selectedExerciseId || addExerciseMutation.isPending}
-            >
-              Add Exercise
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setIsAddingExercise(false)
-                setSelectedExerciseId("")
-                setTargetSets("")
-                setTargetReps("")
-                setRestTime("")
-                setNotes("")
-              }}
-            >
-              Cancel
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full"
-          onClick={() => setIsAddingExercise(true)}
-        >
-          <Plus className="mr-2 h-3 w-3" />
-          Add Exercise
-        </Button>
-      )}
+              {/* Action Buttons */}
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleAddExercise}
+                  disabled={!selectedExerciseId || addExerciseMutation.isPending}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Exercise
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsAddingExercise(false)
+                    resetForm()
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </CardContent>
+          )}
+        </Card>
+      </div>
     </div>
   )
 }
 
-export default function SplitsPage() {
+// Main Training Page
+export default function TrainingPage() {
   const queryClient = useQueryClient()
+  const [selectedDay, setSelectedDay] = useState<SplitDay | null>(null)
+  const [showManageSplits, setShowManageSplits] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [newSplitName, setNewSplitName] = useState("")
   const [newSplitDescription, setNewSplitDescription] = useState("")
-  const [splitDays, setSplitDays] = useState<Array<{ dayOfWeek: number; name: string; description: string }>>([])
-  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set())
+  const [splitDays, setSplitDays] = useState<SplitDayInput[]>([])
 
   const { data, isLoading } = useQuery({
     queryKey: ["splits"],
@@ -451,6 +544,9 @@ export default function SplitsPage() {
     },
   })
 
+  const splits: WorkoutSplit[] = data?.splits || []
+  const activeSplit = splits.find(s => s.isActive)
+
   const handleAddDay = () => {
     setSplitDays([...splitDays, { dayOfWeek: 1, name: "", description: "" }])
   }
@@ -467,7 +563,6 @@ export default function SplitsPage() {
 
   const handleCreateSplit = () => {
     if (!newSplitName) return
-
     createSplitMutation.mutate({
       name: newSplitName,
       description: newSplitDescription || undefined,
@@ -478,244 +573,292 @@ export default function SplitsPage() {
     })
   }
 
-  const toggleDayExpanded = (dayId: string) => {
-    const newExpanded = new Set(expandedDays)
-    if (newExpanded.has(dayId)) {
-      newExpanded.delete(dayId)
-    } else {
-      newExpanded.add(dayId)
-    }
-    setExpandedDays(newExpanded)
+  // Show day detail view if a day is selected
+  if (selectedDay) {
+    return <DayExerciseManager splitDay={selectedDay} onClose={() => setSelectedDay(null)} />
   }
-
-  const splits: WorkoutSplit[] = data?.splits || []
 
   return (
     <div className="space-y-8">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Training Splits</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Training</h1>
           <p className="text-muted-foreground">
-            Create and manage your workout routines
+            {activeSplit ? `Current program: ${activeSplit.name}` : "Select a training program to get started"}
           </p>
         </div>
-        <Button onClick={() => setIsCreating(true)} disabled={isCreating}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Split
+        <Button variant="outline" onClick={() => setShowManageSplits(!showManageSplits)}>
+          <Settings2 className="mr-2 h-4 w-4" />
+          {showManageSplits ? "Hide" : "Manage"} Programs
         </Button>
       </div>
 
-      {isCreating && (
-        <Card>
+      {/* Active Split - Training Options */}
+      {activeSplit ? (
+        <Card className="border-2 border-green-500 bg-green-50 dark:bg-green-950/20">
           <CardHeader>
-            <CardTitle>Create New Split</CardTitle>
-            <CardDescription>Define your training split structure</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="split-name">Split Name</Label>
-                <Input
-                  id="split-name"
-                  placeholder="Push Pull Legs"
-                  value={newSplitName}
-                  onChange={(e) => setNewSplitName(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="split-description">Description</Label>
-                <Input
-                  id="split-description"
-                  placeholder="3-day split (optional)"
-                  value={newSplitDescription}
-                  onChange={(e) => setNewSplitDescription(e.target.value)}
-                />
-              </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm bg-green-500 text-white px-2 py-1 rounded-full font-medium flex items-center gap-1">
+                <CheckCircle2 className="h-3 w-3" />
+                Active
+              </span>
+              <CardTitle>{activeSplit.name}</CardTitle>
             </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label>Days</Label>
-                <Button variant="outline" size="sm" onClick={handleAddDay}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Day
+            <CardDescription>
+              {activeSplit.description || "Select what you want to train today"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {activeSplit.days.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No training days configured</p>
+                <Button variant="link" onClick={() => setShowManageSplits(true)}>
+                  Add training days
                 </Button>
               </div>
-
-              {splitDays.map((day, index) => (
-                <div key={index} className="grid gap-4 md:grid-cols-4 p-4 border rounded-lg">
-                  <div className="space-y-2">
-                    <Label>Day of Week</Label>
-                    <select
-                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                      value={day.dayOfWeek}
-                      onChange={(e) => handleDayChange(index, "dayOfWeek", parseInt(e.target.value))}
-                    >
-                      {DAYS_OF_WEEK.map((dayName, i) => (
-                        <option key={i} value={i}>{dayName}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Name</Label>
-                    <Input
-                      placeholder="Push Day"
-                      value={day.name}
-                      onChange={(e) => handleDayChange(index, "name", e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Description</Label>
-                    <Input
-                      placeholder="Chest, shoulders, triceps"
-                      value={day.description}
-                      onChange={(e) => handleDayChange(index, "description", e.target.value)}
-                    />
-                  </div>
-                  <div className="flex items-end">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleRemoveDay(index)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex gap-2">
-              <Button
-                onClick={handleCreateSplit}
-                disabled={!newSplitName || createSplitMutation.isPending}
-              >
-                Create Split
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setIsCreating(false)
-                  setNewSplitName("")
-                  setNewSplitDescription("")
-                  setSplitDays([])
-                }}
-              >
-                Cancel
-              </Button>
-            </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {activeSplit.days.map((day) => (
+                  <Card
+                    key={day.id}
+                    className="cursor-pointer hover:border-primary hover:shadow-md transition-all"
+                    onClick={() => setSelectedDay(day)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="font-semibold text-lg">{day.name}</h3>
+                          {day.description && (
+                            <p className="text-sm text-muted-foreground mt-1">{day.description}</p>
+                          )}
+                          <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
+                            <Dumbbell className="h-4 w-4" />
+                            <span>{day.exercises?.length || 0} exercises</span>
+                          </div>
+                        </div>
+                        <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Dumbbell className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <h3 className="text-lg font-medium mb-2">No Active Program</h3>
+            <p className="text-muted-foreground mb-4">
+              Create a training split or activate an existing one to start training
+            </p>
+            <Button onClick={() => setShowManageSplits(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Create Training Program
+            </Button>
           </CardContent>
         </Card>
       )}
 
-      {isLoading ? (
-        <p className="text-muted-foreground">Loading splits...</p>
-      ) : splits.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">
-              No training splits yet. Create your first split to get started!
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {splits.map((split) => (
-            <Card key={split.id} className={split.isActive ? "border-primary" : ""}>
+      {/* Manage Splits Section */}
+      {showManageSplits && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold">Manage Programs</h2>
+            <Button onClick={() => setIsCreating(true)} disabled={isCreating}>
+              <Plus className="mr-2 h-4 w-4" />
+              New Program
+            </Button>
+          </div>
+
+          {/* Create New Split Form */}
+          {isCreating && (
+            <Card>
               <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      {split.name}
-                      {split.isActive && (
-                        <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">
-                          Active
-                        </span>
-                      )}
-                    </CardTitle>
-                    {split.description && (
-                      <CardDescription>{split.description}</CardDescription>
-                    )}
+                <CardTitle>Create New Program</CardTitle>
+                <CardDescription>Define your training split structure</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="split-name">Program Name</Label>
+                    <Input
+                      id="split-name"
+                      placeholder="Push Pull Legs"
+                      value={newSplitName}
+                      onChange={(e) => setNewSplitName(e.target.value)}
+                    />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="split-description">Description</Label>
+                    <Input
+                      id="split-description"
+                      placeholder="3-day split (optional)"
+                      value={newSplitDescription}
+                      onChange={(e) => setNewSplitDescription(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label>Training Days</Label>
+                    <Button variant="outline" size="sm" onClick={handleAddDay}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Day
+                    </Button>
+                  </div>
+
+                  {splitDays.map((day, index) => (
+                    <div key={index} className="grid gap-4 md:grid-cols-4 p-4 border rounded-lg">
+                      <div className="space-y-2">
+                        <Label>Day of Week</Label>
+                        <select
+                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                          value={day.dayOfWeek}
+                          onChange={(e) => handleDayChange(index, "dayOfWeek", parseInt(e.target.value))}
+                        >
+                          {DAYS_OF_WEEK.map((dayName, i) => (
+                            <option key={i} value={i}>{dayName}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Name</Label>
+                        <Input
+                          placeholder="Push Day"
+                          value={day.name}
+                          onChange={(e) => handleDayChange(index, "name", e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Description</Label>
+                        <Input
+                          placeholder="Chest, shoulders, triceps"
+                          value={day.description}
+                          onChange={(e) => handleDayChange(index, "description", e.target.value)}
+                        />
+                      </div>
+                      <div className="flex items-end">
+                        <Button variant="ghost" size="icon" onClick={() => handleRemoveDay(index)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex gap-2">
                   <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => deleteSplitMutation.mutate(split.id)}
-                    disabled={deleteSplitMutation.isPending}
+                    onClick={handleCreateSplit}
+                    disabled={!newSplitName || createSplitMutation.isPending}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    Create Program
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsCreating(false)
+                      setNewSplitName("")
+                      setNewSplitDescription("")
+                      setSplitDays([])
+                    }}
+                  >
+                    Cancel
                   </Button>
                 </div>
-              </CardHeader>
-              <CardContent>
-                {split.days.length > 0 ? (
-                  <div className="space-y-2">
-                    {split.days.map((day) => (
-                      <div key={day.id} className="rounded-lg border">
-                        <div
-                          className="p-3 cursor-pointer hover:bg-muted/50 transition-colors"
-                          onClick={() => toggleDayExpanded(day.id)}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="font-medium flex items-center gap-2">
-                                <Dumbbell className="h-4 w-4" />
-                                {DAYS_OF_WEEK[day.dayOfWeek]} - {day.name}
-                              </div>
-                              {day.description && (
-                                <div className="text-sm text-muted-foreground mt-1">
-                                  {day.description}
-                                </div>
-                              )}
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                toggleDayExpanded(day.id)
-                              }}
-                            >
-                              {expandedDays.has(day.id) ? "Hide" : "Manage"}
-                            </Button>
-                          </div>
-                        </div>
-                        {expandedDays.has(day.id) && (
-                          <div className="px-3 pb-3 border-t">
-                            <DayExerciseManager splitDayId={day.id} />
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No days configured</p>
-                )}
-
-                <Button
-                  variant={split.isActive ? "outline" : "default"}
-                  className="w-full mt-4"
-                  onClick={() => toggleActiveMutation.mutate({
-                    id: split.id,
-                    isActive: !split.isActive,
-                  })}
-                  disabled={toggleActiveMutation.isPending}
-                >
-                  {split.isActive ? (
-                    <>
-                      <Circle className="mr-2 h-4 w-4" />
-                      Deactivate
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="mr-2 h-4 w-4" />
-                      Set as Active
-                    </>
-                  )}
-                </Button>
               </CardContent>
             </Card>
-          ))}
+          )}
+
+          {/* Existing Splits */}
+          {isLoading ? (
+            <p className="text-muted-foreground">Loading programs...</p>
+          ) : splits.length === 0 ? (
+            <Card>
+              <CardContent className="py-8 text-center">
+                <p className="text-muted-foreground">
+                  No training programs yet. Create your first one above!
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {splits.map((split) => (
+                <Card 
+                  key={split.id} 
+                  className={split.isActive ? "border-2 border-green-500 bg-green-50 dark:bg-green-950/20" : ""}
+                >
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="flex items-center gap-2">
+                          {split.name}
+                          {split.isActive && (
+                            <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full font-medium flex items-center gap-1">
+                              <CheckCircle2 className="h-3 w-3" />
+                              Active
+                            </span>
+                          )}
+                        </CardTitle>
+                        {split.description && (
+                          <CardDescription>{split.description}</CardDescription>
+                        )}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => deleteSplitMutation.mutate(split.id)}
+                        disabled={deleteSplitMutation.isPending}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {split.days.length > 0 ? (
+                      <div className="space-y-2">
+                        {split.days.map((day) => (
+                          <div key={day.id} className="flex items-center justify-between text-sm p-2 rounded bg-muted/50">
+                            <span className="font-medium">{day.name}</span>
+                            <span className="text-muted-foreground">
+                              {day.exercises?.length || 0} exercises
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No days configured</p>
+                    )}
+
+                    <Button
+                      variant={split.isActive ? "outline" : "default"}
+                      className="w-full mt-4"
+                      onClick={() => toggleActiveMutation.mutate({
+                        id: split.id,
+                        isActive: !split.isActive,
+                      })}
+                      disabled={toggleActiveMutation.isPending}
+                    >
+                      {split.isActive ? (
+                        <>
+                          <Circle className="mr-2 h-4 w-4" />
+                          Deactivate
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="mr-2 h-4 w-4" />
+                          Set as Active
+                        </>
+                      )}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

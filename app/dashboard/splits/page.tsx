@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { 
   Plus, Trash2, CheckCircle2, Circle, Edit, X, Save, Dumbbell, Clock, 
-  ChevronDown, ChevronUp, Play, Search, ArrowLeft, Settings2, Check
+  ChevronDown, ChevronUp, Play, Search, ArrowLeft, Settings2, Check, Copy
 } from "lucide-react"
 
 // Types
@@ -47,6 +47,28 @@ type WorkoutSplit = {
   description?: string | null
   isActive: boolean
   days: SplitDay[]
+}
+
+type TemplateExercise = {
+  id: string
+  exerciseId: string
+  sets: number
+  reps: string
+  restTime: number
+  notes: string
+  order: number
+  exercise: Exercise
+}
+
+type WorkoutTemplate = {
+  id: string
+  name: string
+  description?: string | null
+  category?: string | null
+  difficulty?: string | null
+  duration?: number | null
+  isPublic: boolean
+  exercises?: TemplateExercise[]
 }
 
 interface ExerciseInput {
@@ -491,6 +513,7 @@ function DayExerciseManager({
 // Main Training Page
 export default function TrainingPage() {
   const queryClient = useQueryClient()
+  const [activeTab, setActiveTab] = useState<"programs" | "templates">("programs")
   const [selectedDay, setSelectedDay] = useState<SplitDay | null>(null)
   const [showManageSplits, setShowManageSplits] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
@@ -499,6 +522,19 @@ export default function TrainingPage() {
   const [splitDays, setSplitDays] = useState<SplitDayInput[]>([])
   const [exerciseSearch, setExerciseSearch] = useState("")
   const [expandedDayIndex, setExpandedDayIndex] = useState<number | null>(null)
+  
+  // Template state
+  const [showPublicTemplates, setShowPublicTemplates] = useState(false)
+  const [isCreatingTemplate, setIsCreatingTemplate] = useState(false)
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null)
+  const [templateName, setTemplateName] = useState("")
+  const [templateDescription, setTemplateDescription] = useState("")
+  const [templateCategory, setTemplateCategory] = useState("")
+  const [templateDifficulty, setTemplateDifficulty] = useState("beginner")
+  const [templateDuration, setTemplateDuration] = useState("")
+  const [templateExercises, setTemplateExercises] = useState<
+    Array<{ exerciseId: string; sets: number; reps: string; restTime: number; notes: string }>
+  >([])
 
   const { data, isLoading } = useQuery({
     queryKey: ["splits"],
@@ -519,10 +555,168 @@ export default function TrainingPage() {
       if (!res.ok) throw new Error("Failed to fetch exercises")
       return res.json()
     },
-    enabled: isCreating,
+    enabled: isCreating || isCreatingTemplate,
   })
 
+  // Fetch templates
+  const { data: templatesData, isLoading: templatesLoading } = useQuery({
+    queryKey: ["templates", showPublicTemplates],
+    queryFn: async () => {
+      const res = await fetch(`/api/templates?public=${showPublicTemplates}`)
+      if (!res.ok) throw new Error("Failed to fetch templates")
+      return res.json()
+    },
+    enabled: activeTab === "templates",
+  })
+
+  const templates: WorkoutTemplate[] = templatesData || []
   const availableExercises: Exercise[] = exercisesData?.exercises || []
+
+  // Template mutations
+  const createTemplateMutation = useMutation({
+    mutationFn: async (data: {
+      name: string
+      description?: string
+      category?: string | null
+      difficulty?: string
+      duration?: number | null
+      exercises: Array<{ exerciseId: string; sets: number; reps: string; restTime: number; notes: string; order: number }>
+    }) => {
+      const res = await fetch("/api/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      })
+      if (!res.ok) throw new Error("Failed to create template")
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["templates"] })
+      resetTemplateForm()
+    },
+  })
+
+  const deleteTemplateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/templates/${id}`, { method: "DELETE" })
+      if (!res.ok) throw new Error("Failed to delete template")
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["templates"] })
+    },
+  })
+
+  const duplicateTemplateMutation = useMutation({
+    mutationFn: async (template: WorkoutTemplate) => {
+      const res = await fetch("/api/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: `${template.name} (Copy)`,
+          description: template.description,
+          category: template.category,
+          difficulty: template.difficulty,
+          duration: template.duration,
+          exercises: template.exercises?.map((ex, index) => ({
+            exerciseId: ex.exerciseId || ex.exercise?.id,
+            sets: ex.sets,
+            reps: ex.reps,
+            restTime: ex.restTime,
+            notes: ex.notes,
+            order: index,
+          })) || [],
+        }),
+      })
+      if (!res.ok) throw new Error("Failed to duplicate template")
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["templates"] })
+    },
+  })
+
+  const startWorkoutMutation = useMutation({
+    mutationFn: async (templateId: string) => {
+      const res = await fetch("/api/templates/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ templateId }),
+      })
+      if (!res.ok) throw new Error("Failed to start workout")
+      return res.json()
+    },
+    onSuccess: (data) => {
+      window.location.href = `/dashboard/history?session=${data.sessionId}`
+    },
+  })
+
+  const resetTemplateForm = () => {
+    setIsCreatingTemplate(false)
+    setEditingTemplateId(null)
+    setTemplateName("")
+    setTemplateDescription("")
+    setTemplateCategory("")
+    setTemplateDifficulty("beginner")
+    setTemplateDuration("")
+    setTemplateExercises([])
+  }
+
+  const loadTemplateForEdit = (template: WorkoutTemplate) => {
+    setEditingTemplateId(template.id)
+    setTemplateName(template.name)
+    setTemplateDescription(template.description || "")
+    setTemplateCategory(template.category || "")
+    setTemplateDifficulty(template.difficulty || "beginner")
+    setTemplateDuration(template.duration?.toString() || "")
+    setTemplateExercises(
+      template.exercises?.map((ex) => ({
+        exerciseId: ex.exerciseId || ex.exercise?.id || "",
+        sets: ex.sets || 3,
+        reps: ex.reps || "8-12",
+        restTime: ex.restTime || 90,
+        notes: ex.notes || "",
+      })) || []
+    )
+    setIsCreatingTemplate(true)
+  }
+
+  const handleSubmitTemplate = () => {
+    if (!templateName || templateExercises.length === 0) {
+      alert("Please provide a name and add at least one exercise")
+      return
+    }
+    const invalidExercise = templateExercises.find(ex => !ex.exerciseId)
+    if (invalidExercise) {
+      alert("Please select an exercise for all items")
+      return
+    }
+    createTemplateMutation.mutate({
+      name: templateName,
+      description: templateDescription || undefined,
+      category: templateCategory || null,
+      difficulty: templateDifficulty,
+      duration: templateDuration ? parseInt(templateDuration) : null,
+      exercises: templateExercises.map((ex, index) => ({ ...ex, order: index })),
+    })
+  }
+
+  const addTemplateExercise = () => {
+    setTemplateExercises([
+      ...templateExercises,
+      { exerciseId: "", sets: 3, reps: "8-12", restTime: 90, notes: "" },
+    ])
+  }
+
+  const removeTemplateExercise = (index: number) => {
+    setTemplateExercises(templateExercises.filter((_, i) => i !== index))
+  }
+
+  const updateTemplateExercise = (index: number, field: string, value: string | number) => {
+    const updated = [...templateExercises]
+    updated[index] = { ...updated[index], [field]: value }
+    setTemplateExercises(updated)
+  }
 
   const createSplitMutation = useMutation({
     mutationFn: async (data: { name: string; description?: string; days?: SplitDayInput[] }) => {
@@ -673,23 +867,52 @@ export default function TrainingPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Training</h1>
           <p className="text-muted-foreground">
-            {activeSplit ? `Current program: ${activeSplit.name}` : "Select a training program to get started"}
+            {activeTab === "programs" 
+              ? (activeSplit ? `Current program: ${activeSplit.name}` : "Select a training program to get started")
+              : "Quick workout templates"
+            }
           </p>
         </div>
-        <Button variant="outline" onClick={() => setShowManageSplits(!showManageSplits)}>
-          <Settings2 className="mr-2 h-4 w-4" />
-          {showManageSplits ? "Hide" : "Manage"} Programs
+      </div>
+
+      {/* Tab Switcher */}
+      <div className="flex gap-2 border-b pb-2">
+        <Button 
+          variant={activeTab === "programs" ? "default" : "ghost"}
+          onClick={() => setActiveTab("programs")}
+          className="rounded-b-none"
+        >
+          <Dumbbell className="mr-2 h-4 w-4" />
+          Programs
+        </Button>
+        <Button 
+          variant={activeTab === "templates" ? "default" : "ghost"}
+          onClick={() => setActiveTab("templates")}
+          className="rounded-b-none"
+        >
+          <Play className="mr-2 h-4 w-4" />
+          Quick Workouts
         </Button>
       </div>
 
-      {/* Active Split - Training Options */}
-      {activeSplit ? (
+      {/* Programs Tab */}
+      {activeTab === "programs" && (
+        <div className="space-y-6">
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={() => setShowManageSplits(!showManageSplits)}>
+              <Settings2 className="mr-2 h-4 w-4" />
+              {showManageSplits ? "Hide" : "Manage"} Programs
+            </Button>
+          </div>
+
+          {/* Active Split - Training Options */}
+          {activeSplit ? (
         <Card className="border-2 border-green-500 bg-green-50 dark:bg-green-950/20">
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -1031,6 +1254,318 @@ export default function TrainingPage() {
                         </>
                       )}
                     </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Templates Tab */}
+      {activeTab === "templates" && (
+        <div className="space-y-6">
+          {/* Templates Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex gap-2">
+              <Button 
+                variant={!showPublicTemplates ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowPublicTemplates(false)}
+              >
+                My Templates
+              </Button>
+              <Button 
+                variant={showPublicTemplates ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowPublicTemplates(true)}
+              >
+                Public Library
+              </Button>
+            </div>
+            {!showPublicTemplates && (
+              <Button onClick={() => setIsCreatingTemplate(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Template
+              </Button>
+            )}
+          </div>
+
+          {/* Create/Edit Template Form */}
+          {isCreatingTemplate && (
+            <Card>
+              <CardHeader>
+                <CardTitle>{editingTemplateId ? "Edit Template" : "Create New Template"}</CardTitle>
+                <CardDescription>Build a reusable workout template</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Template Name *</Label>
+                    <Input
+                      value={templateName}
+                      onChange={(e) => setTemplateName(e.target.value)}
+                      placeholder="e.g., Push Day, Full Body A"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Description</Label>
+                    <Input
+                      value={templateDescription}
+                      onChange={(e) => setTemplateDescription(e.target.value)}
+                      placeholder="Optional description..."
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label>Category</Label>
+                    <select
+                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                      value={templateCategory}
+                      onChange={(e) => setTemplateCategory(e.target.value)}
+                    >
+                      <option value="">Select...</option>
+                      <option value="strength">Strength</option>
+                      <option value="cardio">Cardio</option>
+                      <option value="hiit">HIIT</option>
+                      <option value="flexibility">Flexibility</option>
+                      <option value="full_body">Full Body</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Difficulty</Label>
+                    <select
+                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                      value={templateDifficulty}
+                      onChange={(e) => setTemplateDifficulty(e.target.value)}
+                    >
+                      <option value="beginner">Beginner</option>
+                      <option value="intermediate">Intermediate</option>
+                      <option value="advanced">Advanced</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Duration (min)</Label>
+                    <Input
+                      type="number"
+                      value={templateDuration}
+                      onChange={(e) => setTemplateDuration(e.target.value)}
+                      placeholder="60"
+                    />
+                  </div>
+                </div>
+
+                {/* Template Exercises */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Exercises *</Label>
+                    <Button variant="link" size="sm" onClick={addTemplateExercise}>
+                      + Add Exercise
+                    </Button>
+                  </div>
+                  <div className="space-y-3">
+                    {templateExercises.map((ex, index) => (
+                      <div key={index} className="p-4 border rounded-md bg-muted/50 space-y-3">
+                        <div className="flex items-start gap-3">
+                          <div className="flex-1">
+                            <select
+                              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                              value={ex.exerciseId}
+                              onChange={(e) => updateTemplateExercise(index, "exerciseId", e.target.value)}
+                            >
+                              <option value="">Select exercise...</option>
+                              {availableExercises.map((exercise) => (
+                                <option key={exercise.id} value={exercise.id}>
+                                  {exercise.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <Button variant="ghost" size="icon" onClick={() => removeTemplateExercise(index)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-4 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Sets</Label>
+                            <Input
+                              type="number"
+                              value={ex.sets}
+                              onChange={(e) => updateTemplateExercise(index, "sets", parseInt(e.target.value))}
+                              min={1}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Reps</Label>
+                            <Input
+                              value={ex.reps}
+                              onChange={(e) => updateTemplateExercise(index, "reps", e.target.value)}
+                              placeholder="8-12"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Rest (sec)</Label>
+                            <Input
+                              type="number"
+                              value={ex.restTime}
+                              onChange={(e) => updateTemplateExercise(index, "restTime", parseInt(e.target.value))}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Notes</Label>
+                            <Input
+                              value={ex.notes}
+                              onChange={(e) => updateTemplateExercise(index, "notes", e.target.value)}
+                              placeholder="Optional"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {templateExercises.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No exercises added yet. Click &quot;+ Add Exercise&quot; to start.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-4">
+                  <Button
+                    onClick={handleSubmitTemplate}
+                    disabled={createTemplateMutation.isPending}
+                  >
+                    {createTemplateMutation.isPending ? "Creating..." : (editingTemplateId ? "Save Changes" : "Create Template")}
+                  </Button>
+                  <Button variant="outline" onClick={resetTemplateForm}>
+                    Cancel
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Templates List */}
+          {templatesLoading ? (
+            <p className="text-muted-foreground">Loading templates...</p>
+          ) : templates.length === 0 ? (
+            <Card>
+              <CardContent className="py-8 text-center">
+                <p className="text-muted-foreground">
+                  {showPublicTemplates
+                    ? "No public templates available yet"
+                    : "No templates yet. Create your first template!"}
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {templates.map((template) => (
+                <Card key={template.id} className="hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg">{template.name}</CardTitle>
+                    {template.description && (
+                      <CardDescription>{template.description}</CardDescription>
+                    )}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {template.category && (
+                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs">
+                          {template.category}
+                        </span>
+                      )}
+                      {template.difficulty && (
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          template.difficulty === "beginner"
+                            ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
+                            : template.difficulty === "intermediate"
+                            ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
+                            : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
+                        }`}>
+                          {template.difficulty}
+                        </span>
+                      )}
+                      {template.duration && (
+                        <span className="px-2 py-1 bg-muted rounded-full text-xs flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {template.duration} min
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mb-4">
+                      <p className="text-sm text-muted-foreground mb-2">
+                        {template.exercises?.length || 0} exercises
+                      </p>
+                      <div className="space-y-1">
+                        {template.exercises?.slice(0, 3).map((ex) => (
+                          <div key={ex.id} className="text-sm flex items-center gap-2">
+                            <span className="w-5 h-5 bg-primary/10 text-primary rounded-full flex items-center justify-center text-xs">
+                              {ex.sets}
+                            </span>
+                            <span>{ex.exercise?.name}</span>
+                          </div>
+                        ))}
+                        {(template.exercises?.length || 0) > 3 && (
+                          <p className="text-xs text-muted-foreground">
+                            +{(template.exercises?.length || 0) - 3} more
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button
+                        className="flex-1"
+                        onClick={() => startWorkoutMutation.mutate(template.id)}
+                        disabled={startWorkoutMutation.isPending}
+                      >
+                        <Play className="mr-2 h-4 w-4" />
+                        Start
+                      </Button>
+                      {!showPublicTemplates && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => loadTemplateForEdit(template)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => duplicateTemplateMutation.mutate(template)}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => {
+                              if (confirm(`Delete "${template.name}"?`)) {
+                                deleteTemplateMutation.mutate(template.id)
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                      {showPublicTemplates && (
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => duplicateTemplateMutation.mutate(template)}
+                          title="Copy to my templates"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               ))}

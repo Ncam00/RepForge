@@ -95,6 +95,52 @@ const MUSCLE_GROUPS = [
   "hamstrings", "quads", "shoulders", "traps", "triceps"
 ]
 
+// Pre-built program templates
+const PROGRAM_TEMPLATES = {
+  ppl: {
+    name: "Push Pull Legs",
+    description: "6-day split targeting push, pull, and leg movements",
+    days: [
+      { dayOfWeek: 1, name: "Push A", description: "Chest, shoulders, triceps", exercises: [] },
+      { dayOfWeek: 2, name: "Pull A", description: "Back, biceps, rear delts", exercises: [] },
+      { dayOfWeek: 3, name: "Legs A", description: "Quads, hamstrings, calves", exercises: [] },
+      { dayOfWeek: 4, name: "Push B", description: "Chest, shoulders, triceps", exercises: [] },
+      { dayOfWeek: 5, name: "Pull B", description: "Back, biceps, rear delts", exercises: [] },
+      { dayOfWeek: 6, name: "Legs B", description: "Quads, hamstrings, calves", exercises: [] },
+    ],
+  },
+  upperLower: {
+    name: "Upper Lower",
+    description: "4-day split alternating upper and lower body",
+    days: [
+      { dayOfWeek: 1, name: "Upper A", description: "Chest, back, shoulders, arms", exercises: [] },
+      { dayOfWeek: 2, name: "Lower A", description: "Quads, hamstrings, glutes, calves", exercises: [] },
+      { dayOfWeek: 4, name: "Upper B", description: "Chest, back, shoulders, arms", exercises: [] },
+      { dayOfWeek: 5, name: "Lower B", description: "Quads, hamstrings, glutes, calves", exercises: [] },
+    ],
+  },
+  broSplit: {
+    name: "Bro Split",
+    description: "5-day split with dedicated muscle group days",
+    days: [
+      { dayOfWeek: 1, name: "Chest", description: "All chest movements", exercises: [] },
+      { dayOfWeek: 2, name: "Back", description: "All back movements", exercises: [] },
+      { dayOfWeek: 3, name: "Shoulders", description: "All shoulder movements", exercises: [] },
+      { dayOfWeek: 4, name: "Arms", description: "Biceps and triceps", exercises: [] },
+      { dayOfWeek: 5, name: "Legs", description: "Quads, hamstrings, calves", exercises: [] },
+    ],
+  },
+  fullBody: {
+    name: "Full Body",
+    description: "3-day full body workouts",
+    days: [
+      { dayOfWeek: 1, name: "Full Body A", description: "Compound focus", exercises: [] },
+      { dayOfWeek: 3, name: "Full Body B", description: "Balanced training", exercises: [] },
+      { dayOfWeek: 5, name: "Full Body C", description: "Accessory focus", exercises: [] },
+    ],
+  },
+}
+
 // Component for managing exercises within a selected day
 function DayExerciseManager({ 
   splitDay, 
@@ -805,6 +851,42 @@ export default function TrainingPage() {
     setSplitDays([...splitDays, { dayOfWeek: 1, name: "", description: "", exercises: [] }])
   }
 
+  const applyTemplate = (templateKey: keyof typeof PROGRAM_TEMPLATES) => {
+    const template = PROGRAM_TEMPLATES[templateKey]
+    setNewSplitName(template.name)
+    setNewSplitDescription(template.description)
+    setSplitDays(template.days.map((day, index) => ({
+      ...day,
+      order: index,
+      exercises: [],
+    })))
+  }
+
+  const handleCopyDay = (index: number) => {
+    const dayToCopy = splitDays[index]
+    const copiedDay = {
+      ...dayToCopy,
+      name: `${dayToCopy.name} (Copy)`,
+      dayOfWeek: (dayToCopy.dayOfWeek + 1) % 7,
+      exercises: dayToCopy.exercises ? [...dayToCopy.exercises] : [],
+    }
+    setSplitDays([...splitDays, copiedDay])
+  }
+
+  // Calculate estimated duration for a day based on exercises
+  const calculateDayDuration = (exercises: ExerciseInput[] | undefined): number => {
+    if (!exercises || exercises.length === 0) return 0
+    let totalMinutes = 0
+    for (const ex of exercises) {
+      const sets = ex.targetSets || 3
+      const restSeconds = ex.restTime || 90
+      // ~45 sec per set + rest time
+      totalMinutes += (sets * 45 + sets * restSeconds) / 60
+    }
+    // Add warmup time
+    return Math.round(totalMinutes + 5)
+  }
+
   const handleRemoveDay = (index: number) => {
     setSplitDays(splitDays.filter((_, i) => i !== index))
     if (expandedDayIndex === index) setExpandedDayIndex(null)
@@ -997,7 +1079,83 @@ export default function TrainingPage() {
                 <CardTitle>Create New Program</CardTitle>
                 <CardDescription>Define your training split structure</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-6">
+                {/* Quick Start Templates */}
+                {splitDays.length === 0 && (
+                  <div className="space-y-3">
+                    <Label className="text-sm text-muted-foreground">Quick Start - Choose a Template</Label>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <Button
+                        variant="outline"
+                        className="h-auto py-4 flex flex-col items-center gap-2"
+                        onClick={() => applyTemplate("ppl")}
+                      >
+                        <span className="font-semibold">Push Pull Legs</span>
+                        <span className="text-xs text-muted-foreground">6 days/week</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="h-auto py-4 flex flex-col items-center gap-2"
+                        onClick={() => applyTemplate("upperLower")}
+                      >
+                        <span className="font-semibold">Upper Lower</span>
+                        <span className="text-xs text-muted-foreground">4 days/week</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="h-auto py-4 flex flex-col items-center gap-2"
+                        onClick={() => applyTemplate("broSplit")}
+                      >
+                        <span className="font-semibold">Bro Split</span>
+                        <span className="text-xs text-muted-foreground">5 days/week</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="h-auto py-4 flex flex-col items-center gap-2"
+                        onClick={() => applyTemplate("fullBody")}
+                      >
+                        <span className="font-semibold">Full Body</span>
+                        <span className="text-xs text-muted-foreground">3 days/week</span>
+                      </Button>
+                    </div>
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">or create from scratch</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Week Preview */}
+                {splitDays.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm text-muted-foreground">Week Preview</Label>
+                    <div className="flex gap-1">
+                      {DAYS_OF_WEEK.map((dayName, i) => {
+                        const hasWorkout = splitDays.some(d => d.dayOfWeek === i)
+                        return (
+                          <div
+                            key={i}
+                            className={`flex-1 text-center py-2 rounded text-xs font-medium ${
+                              hasWorkout 
+                                ? "bg-primary text-primary-foreground" 
+                                : "bg-muted text-muted-foreground"
+                            }`}
+                          >
+                            {dayName.slice(0, 3)}
+                          </div>
+                        )
+                      })}
+                    </div>
+                    <p className="text-xs text-muted-foreground text-center">
+                      {splitDays.length} training days • {7 - splitDays.length} rest days
+                    </p>
+                  </div>
+                )}
+
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="split-name">Program Name</Label>
@@ -1068,11 +1226,27 @@ export default function TrainingPage() {
                             <Dumbbell className="mr-2 h-4 w-4" />
                             {(day.exercises?.length || 0)} exercises
                           </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => handleCopyDay(index)}
+                            title="Copy this day"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
                           <Button variant="ghost" size="icon" onClick={() => handleRemoveDay(index)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
+                      
+                      {/* Duration Estimate */}
+                      {day.exercises && day.exercises.length > 0 && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Clock className="h-4 w-4" />
+                          <span>~{calculateDayDuration(day.exercises)} min estimated</span>
+                        </div>
+                      )}
                       
                       {/* Expanded Exercise Picker */}
                       {expandedDayIndex === index && (

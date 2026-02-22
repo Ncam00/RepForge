@@ -526,15 +526,21 @@ export default function TrainingPage() {
 
   const createSplitMutation = useMutation({
     mutationFn: async (data: { name: string; description?: string; days?: SplitDayInput[] }) => {
+      console.log("Creating split with data:", data)
       const res = await fetch("/api/splits", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       })
-      if (!res.ok) throw new Error("Failed to create split")
+      if (!res.ok) {
+        const error = await res.text()
+        console.error("Create split failed:", error)
+        throw new Error("Failed to create split")
+      }
       return res.json()
     },
     onSuccess: async (result, variables) => {
+      console.log("Split created:", result)
       // After creating the split, add exercises to each day
       if (result.split?.days && variables.days) {
         for (let i = 0; i < result.split.days.length; i++) {
@@ -563,6 +569,10 @@ export default function TrainingPage() {
       setNewSplitDescription("")
       setSplitDays([])
       setExpandedDayIndex(null)
+    },
+    onError: (error) => {
+      console.error("Mutation error:", error)
+      alert("Failed to create program: " + error.message)
     },
   })
 
@@ -641,15 +651,20 @@ export default function TrainingPage() {
   }
 
   const handleCreateSplit = () => {
-    if (!newSplitName) return
-    createSplitMutation.mutate({
+    if (!newSplitName) {
+      console.log("No split name provided")
+      return
+    }
+    const payload = {
       name: newSplitName,
       description: newSplitDescription || undefined,
       days: splitDays.length > 0 ? splitDays.map((day, index) => ({
         ...day,
         order: index,
       })) : undefined,
-    })
+    }
+    console.log("Calling createSplitMutation with:", payload)
+    createSplitMutation.mutate(payload)
   }
 
   // Show day detail view if a day is selected

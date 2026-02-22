@@ -1261,6 +1261,8 @@ export default function TrainingPage() {
           )}
         </div>
       )}
+        </div>
+      )}
 
       {/* Templates Tab */}
       {activeTab === "templates" && (

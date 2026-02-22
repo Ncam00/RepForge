@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { 
   Plus, Trash2, CheckCircle2, Circle, Edit, X, Save, Dumbbell, Clock, 
-  ChevronDown, ChevronUp, Play, Search, ArrowLeft, Settings2
+  ChevronDown, ChevronUp, Play, Search, ArrowLeft, Settings2, Check
 } from "lucide-react"
 
 // Types
@@ -49,11 +49,21 @@ type WorkoutSplit = {
   days: SplitDay[]
 }
 
+interface ExerciseInput {
+  exerciseId: string
+  exerciseName: string
+  targetSets?: number
+  targetReps?: string
+  restTime?: number
+  notes?: string
+}
+
 interface SplitDayInput {
   dayOfWeek: number
   name: string
   description?: string
   order?: number
+  exercises?: ExerciseInput[]
 }
 
 const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
@@ -487,6 +497,8 @@ export default function TrainingPage() {
   const [newSplitName, setNewSplitName] = useState("")
   const [newSplitDescription, setNewSplitDescription] = useState("")
   const [splitDays, setSplitDays] = useState<SplitDayInput[]>([])
+  const [exerciseSearch, setExerciseSearch] = useState("")
+  const [expandedDayIndex, setExpandedDayIndex] = useState<number | null>(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ["splits"],
@@ -496,6 +508,21 @@ export default function TrainingPage() {
       return res.json()
     },
   })
+
+  // Fetch exercises for the create form
+  const { data: exercisesData } = useQuery({
+    queryKey: ["exercises", exerciseSearch],
+    queryFn: async () => {
+      const params = new URLSearchParams()
+      if (exerciseSearch) params.append("search", exerciseSearch)
+      const res = await fetch(`/api/exercises?${params}`)
+      if (!res.ok) throw new Error("Failed to fetch exercises")
+      return res.json()
+    },
+    enabled: isCreating,
+  })
+
+  const availableExercises: Exercise[] = exercisesData?.exercises || []
 
   const createSplitMutation = useMutation({
     mutationFn: async (data: { name: string; description?: string; days?: SplitDayInput[] }) => {
@@ -507,12 +534,35 @@ export default function TrainingPage() {
       if (!res.ok) throw new Error("Failed to create split")
       return res.json()
     },
-    onSuccess: () => {
+    onSuccess: async (result, variables) => {
+      // After creating the split, add exercises to each day
+      if (result.split?.days && variables.days) {
+        for (let i = 0; i < result.split.days.length; i++) {
+          const createdDay = result.split.days[i]
+          const inputDay = variables.days.find((d: SplitDayInput) => d.dayOfWeek === createdDay.dayOfWeek && d.name === createdDay.name)
+          if (inputDay?.exercises?.length) {
+            for (const exercise of inputDay.exercises) {
+              await fetch(`/api/splits/${createdDay.id}/exercises`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  exerciseId: exercise.exerciseId,
+                  targetSets: exercise.targetSets,
+                  targetReps: exercise.targetReps,
+                  restTime: exercise.restTime,
+                  notes: exercise.notes,
+                }),
+              })
+            }
+          }
+        }
+      }
       queryClient.invalidateQueries({ queryKey: ["splits"] })
       setIsCreating(false)
       setNewSplitName("")
       setNewSplitDescription("")
       setSplitDays([])
+      setExpandedDayIndex(null)
     },
   })
 
@@ -548,16 +598,45 @@ export default function TrainingPage() {
   const activeSplit = splits.find(s => s.isActive)
 
   const handleAddDay = () => {
-    setSplitDays([...splitDays, { dayOfWeek: 1, name: "", description: "" }])
+    setSplitDays([...splitDays, { dayOfWeek: 1, name: "", description: "", exercises: [] }])
   }
 
   const handleRemoveDay = (index: number) => {
     setSplitDays(splitDays.filter((_, i) => i !== index))
+    if (expandedDayIndex === index) setExpandedDayIndex(null)
   }
 
   const handleDayChange = (index: number, field: string, value: string | number) => {
     const updated = [...splitDays]
     updated[index] = { ...updated[index], [field]: value }
+    setSplitDays(updated)
+  }
+
+  const handleAddExerciseToDay = (dayIndex: number, exercise: Exercise) => {
+    const updated = [...splitDays]
+    const exercises = updated[dayIndex].exercises || []
+    // Check if already added
+    if (exercises.some(e => e.exerciseId === exercise.id)) return
+    updated[dayIndex].exercises = [...exercises, {
+      exerciseId: exercise.id,
+      exerciseName: exercise.name,
+      targetSets: 3,
+      targetReps: "8-12",
+    }]
+    setSplitDays(updated)
+  }
+
+  const handleRemoveExerciseFromDay = (dayIndex: number, exerciseId: string) => {
+    const updated = [...splitDays]
+    updated[dayIndex].exercises = (updated[dayIndex].exercises || []).filter(e => e.exerciseId !== exerciseId)
+    setSplitDays(updated)
+  }
+
+  const handleUpdateExerciseInDay = (dayIndex: number, exerciseId: string, field: string, value: unknown) => {
+    const updated = [...splitDays]
+    updated[dayIndex].exercises = (updated[dayIndex].exercises || []).map(e => 
+      e.exerciseId === exerciseId ? { ...e, [field]: value } : e
+    )
     setSplitDays(updated)
   }
 
@@ -712,40 +791,121 @@ export default function TrainingPage() {
                   </div>
 
                   {splitDays.map((day, index) => (
-                    <div key={index} className="grid gap-4 md:grid-cols-4 p-4 border rounded-lg">
-                      <div className="space-y-2">
-                        <Label>Day of Week</Label>
-                        <select
-                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                          value={day.dayOfWeek}
-                          onChange={(e) => handleDayChange(index, "dayOfWeek", parseInt(e.target.value))}
-                        >
-                          {DAYS_OF_WEEK.map((dayName, i) => (
-                            <option key={i} value={i}>{dayName}</option>
-                          ))}
-                        </select>
+                    <div key={index} className="p-4 border rounded-lg space-y-4">
+                      <div className="grid gap-4 md:grid-cols-4">
+                        <div className="space-y-2">
+                          <Label>Day of Week</Label>
+                          <select
+                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                            value={day.dayOfWeek}
+                            onChange={(e) => handleDayChange(index, "dayOfWeek", parseInt(e.target.value))}
+                          >
+                            {DAYS_OF_WEEK.map((dayName, i) => (
+                              <option key={i} value={i}>{dayName}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Name</Label>
+                          <Input
+                            placeholder="Push Day"
+                            value={day.name}
+                            onChange={(e) => handleDayChange(index, "name", e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Description</Label>
+                          <Input
+                            placeholder="Chest, shoulders, triceps"
+                            value={day.description}
+                            onChange={(e) => handleDayChange(index, "description", e.target.value)}
+                          />
+                        </div>
+                        <div className="flex items-end gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => setExpandedDayIndex(expandedDayIndex === index ? null : index)}
+                          >
+                            <Dumbbell className="mr-2 h-4 w-4" />
+                            {(day.exercises?.length || 0)} exercises
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleRemoveDay(index)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label>Name</Label>
-                        <Input
-                          placeholder="Push Day"
-                          value={day.name}
-                          onChange={(e) => handleDayChange(index, "name", e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Description</Label>
-                        <Input
-                          placeholder="Chest, shoulders, triceps"
-                          value={day.description}
-                          onChange={(e) => handleDayChange(index, "description", e.target.value)}
-                        />
-                      </div>
-                      <div className="flex items-end">
-                        <Button variant="ghost" size="icon" onClick={() => handleRemoveDay(index)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      
+                      {/* Expanded Exercise Picker */}
+                      {expandedDayIndex === index && (
+                        <div className="border-t pt-4 space-y-4">
+                          {/* Current exercises */}
+                          {day.exercises && day.exercises.length > 0 && (
+                            <div className="space-y-2">
+                              <Label className="text-sm text-muted-foreground">Selected Exercises</Label>
+                              {day.exercises.map((exercise) => (
+                                <div key={exercise.exerciseId} className="flex items-center gap-2 p-2 bg-muted rounded">
+                                  <span className="flex-1 font-medium">{exercise.exerciseName}</span>
+                                  <Input
+                                    type="number"
+                                    placeholder="Sets"
+                                    value={exercise.targetSets || ""}
+                                    onChange={(e) => handleUpdateExerciseInDay(index, exercise.exerciseId, "targetSets", parseInt(e.target.value) || undefined)}
+                                    className="w-16"
+                                  />
+                                  <span className="text-muted-foreground">x</span>
+                                  <Input
+                                    placeholder="Reps"
+                                    value={exercise.targetReps || ""}
+                                    onChange={(e) => handleUpdateExerciseInDay(index, exercise.exerciseId, "targetReps", e.target.value)}
+                                    className="w-20"
+                                  />
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    onClick={() => handleRemoveExerciseFromDay(index, exercise.exerciseId)}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {/* Exercise search and add */}
+                          <div className="space-y-2">
+                            <Label className="text-sm text-muted-foreground">Add Exercises</Label>
+                            <Input
+                              placeholder="Search exercises..."
+                              value={exerciseSearch}
+                              onChange={(e) => setExerciseSearch(e.target.value)}
+                            />
+                            {availableExercises.length > 0 && (
+                              <div className="grid gap-1 max-h-48 overflow-y-auto">
+                                {availableExercises.slice(0, 20).map((exercise) => {
+                                  const isAdded = day.exercises?.some(e => e.exerciseId === exercise.id)
+                                  return (
+                                    <Button
+                                      key={exercise.id}
+                                      variant={isAdded ? "secondary" : "ghost"}
+                                      size="sm"
+                                      className="justify-start"
+                                      onClick={() => !isAdded && handleAddExerciseToDay(index, exercise)}
+                                      disabled={isAdded}
+                                    >
+                                      {isAdded && <Check className="mr-2 h-4 w-4" />}
+                                      {exercise.name}
+                                      <span className="ml-auto text-xs text-muted-foreground capitalize">
+                                        {exercise.muscleGroups.replace("_", " ")}
+                                      </span>
+                                    </Button>
+                                  )
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -764,6 +924,8 @@ export default function TrainingPage() {
                       setNewSplitName("")
                       setNewSplitDescription("")
                       setSplitDays([])
+                      setExerciseSearch("")
+                      setExpandedDayIndex(null)
                     }}
                   >
                     Cancel

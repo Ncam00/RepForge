@@ -9,7 +9,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { 
   Plus, Trash2, CheckCircle2, Circle, Edit, X, Save, Dumbbell, Clock, 
   ChevronDown, ChevronUp, Play, Search, ArrowLeft, Settings2, Check, Copy,
-  ArrowUp, ArrowDown, Download, AlertTriangle, Sparkles
+  ArrowUp, ArrowDown, Download, AlertTriangle, Sparkles, Moon, StickyNote, Link2
 } from "lucide-react"
 
 // Types
@@ -79,6 +79,7 @@ interface ExerciseInput {
   targetReps?: string
   restTime?: number
   notes?: string
+  supersetGroup?: number // Group exercises into supersets
 }
 
 interface SplitDayInput {
@@ -87,6 +88,8 @@ interface SplitDayInput {
   description?: string
   order?: number
   exercises?: ExerciseInput[]
+  isRestDay?: boolean
+  notes?: string
 }
 
 const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
@@ -910,6 +913,9 @@ export default function TrainingPage() {
   const getDayWarnings = (day: SplitDayInput): string[] => {
     const warnings: string[] = []
     
+    // No warnings for rest days
+    if (day.isRestDay) return warnings
+    
     if (!day.exercises || day.exercises.length === 0) {
       warnings.push("No exercises added")
       return warnings
@@ -1256,23 +1262,29 @@ export default function TrainingPage() {
                     <Label className="text-sm text-muted-foreground">Week Preview</Label>
                     <div className="flex gap-1">
                       {DAYS_OF_WEEK.map((dayName, i) => {
-                        const hasWorkout = splitDays.some(d => d.dayOfWeek === i)
+                        const dayData = splitDays.find(d => d.dayOfWeek === i)
+                        const hasWorkout = dayData && !dayData.isRestDay
+                        const isRestDay = dayData?.isRestDay
                         return (
                           <div
                             key={i}
                             className={`flex-1 text-center py-2 rounded text-xs font-medium ${
                               hasWorkout 
                                 ? "bg-primary text-primary-foreground" 
-                                : "bg-muted text-muted-foreground"
+                                : isRestDay
+                                  ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                                  : "bg-muted text-muted-foreground"
                             }`}
+                            title={dayData?.name || "Rest"}
                           >
                             {dayName.slice(0, 3)}
+                            {isRestDay && <Moon className="h-3 w-3 mx-auto mt-0.5" />}
                           </div>
                         )
                       })}
                     </div>
                     <p className="text-xs text-muted-foreground text-center">
-                      {splitDays.length} training days • {7 - splitDays.length} rest days
+                      {splitDays.filter(d => !d.isRestDay).length} training days • {splitDays.filter(d => d.isRestDay).length || 0} marked rest • {7 - splitDays.length} unplanned
                     </p>
                   </div>
                 )}
@@ -1338,15 +1350,40 @@ export default function TrainingPage() {
                             onChange={(e) => handleDayChange(index, "description", e.target.value)}
                           />
                         </div>
+                        {/* Day Notes */}
+                        <div className="space-y-2">
+                          <Label className="flex items-center gap-2">
+                            <StickyNote className="h-4 w-4" />
+                            Notes
+                          </Label>
+                          <textarea
+                            placeholder="Equipment needed, tips, modifications..."
+                            value={day.notes || ""}
+                            onChange={(e) => handleDayChange(index, "notes", e.target.value)}
+                            className="w-full min-h-[60px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          />
+                        </div>
                         <div className="flex items-end gap-2">
+                          {/* Rest Day Toggle */}
                           <Button 
-                            variant="outline" 
+                            variant={day.isRestDay ? "default" : "outline"}
                             size="sm"
-                            onClick={() => setExpandedDayIndex(expandedDayIndex === index ? null : index)}
+                            onClick={() => handleDayChange(index, "isRestDay", !day.isRestDay)}
+                            title="Toggle rest day"
                           >
-                            <Dumbbell className="mr-2 h-4 w-4" />
-                            {(day.exercises?.length || 0)} exercises
+                            <Moon className="mr-2 h-4 w-4" />
+                            {day.isRestDay ? "Rest Day" : "Training Day"}
                           </Button>
+                          {!day.isRestDay && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => setExpandedDayIndex(expandedDayIndex === index ? null : index)}
+                            >
+                              <Dumbbell className="mr-2 h-4 w-4" />
+                              {(day.exercises?.length || 0)} exercises
+                            </Button>
+                          )}
                           <Button 
                             variant="ghost" 
                             size="icon" 
@@ -1361,8 +1398,16 @@ export default function TrainingPage() {
                         </div>
                       </div>
                       
-                      {/* Duration Estimate */}
-                      {day.exercises && day.exercises.length > 0 && (
+                      {/* Rest Day Indicator */}
+                      {day.isRestDay && (
+                        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                          <Moon className="h-5 w-5 text-muted-foreground" />
+                          <span className="text-muted-foreground">Recovery day - rest and prepare for your next workout</span>
+                        </div>
+                      )}
+                      
+                      {/* Duration Estimate - only show if not rest day */}
+                      {!day.isRestDay && day.exercises && day.exercises.length > 0 && (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Clock className="h-4 w-4" />
                           <span>~{calculateDayDuration(day.exercises)} min estimated</span>
@@ -1370,7 +1415,7 @@ export default function TrainingPage() {
                       )}
                       
                       {/* Muscle Coverage Visual */}
-                      {day.exercises && day.exercises.length > 0 && (
+                      {!day.isRestDay && day.exercises && day.exercises.length > 0 && (
                         <div className="flex flex-wrap gap-1">
                           {Object.entries(getDayMuscleCoverage(day.exercises)).map(([muscle, sets]) => (
                             <span 
@@ -1385,7 +1430,7 @@ export default function TrainingPage() {
                       )}
                       
                       {/* Validation Warnings */}
-                      {getDayWarnings(day).length > 0 && (
+                      {!day.isRestDay && getDayWarnings(day).length > 0 && (
                         <div className="flex items-start gap-2 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded text-sm text-yellow-600 dark:text-yellow-400">
                           <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
                           <div className="space-y-1">
@@ -1397,7 +1442,7 @@ export default function TrainingPage() {
                       )}
                       
                       {/* Expanded Exercise Picker */}
-                      {expandedDayIndex === index && (
+                      {!day.isRestDay && expandedDayIndex === index && (
                         <div className="border-t pt-4 space-y-4">
                           {/* Current exercises */}
                           {day.exercises && day.exercises.length > 0 && (

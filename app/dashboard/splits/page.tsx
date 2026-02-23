@@ -9,7 +9,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { 
   Plus, Trash2, CheckCircle2, Circle, Edit, X, Save, Dumbbell, Clock, 
   ChevronDown, ChevronUp, Play, Search, ArrowLeft, Settings2, Check, Copy,
-  ArrowUp, ArrowDown, Download
+  ArrowUp, ArrowDown, Download, AlertTriangle, Sparkles
 } from "lucide-react"
 
 // Types
@@ -889,6 +889,84 @@ export default function TrainingPage() {
     return Math.round(totalMinutes + 5)
   }
 
+  // Calculate muscle coverage for a day's exercises
+  const getDayMuscleCoverage = (exercises: ExerciseInput[] | undefined): Record<string, number> => {
+    if (!exercises || exercises.length === 0) return {}
+    const coverage: Record<string, number> = {}
+    
+    for (const ex of exercises) {
+      const fullExercise = availableExercises.find(e => e.id === ex.exerciseId)
+      if (fullExercise?.muscleGroups) {
+        const muscles = fullExercise.muscleGroups.split(',').map(m => m.trim().toLowerCase())
+        for (const muscle of muscles) {
+          coverage[muscle] = (coverage[muscle] || 0) + (ex.targetSets || 3)
+        }
+      }
+    }
+    return coverage
+  }
+
+  // Get validation warnings for a day
+  const getDayWarnings = (day: SplitDayInput): string[] => {
+    const warnings: string[] = []
+    
+    if (!day.exercises || day.exercises.length === 0) {
+      warnings.push("No exercises added")
+      return warnings
+    }
+    
+    // Check for very short or very long workouts
+    const duration = calculateDayDuration(day.exercises)
+    if (duration > 90) {
+      warnings.push("Workout may be too long (90+ min)")
+    }
+    
+    // Check for exercises without sets
+    const noSets = day.exercises.filter(e => !e.targetSets || e.targetSets < 1)
+    if (noSets.length > 0) {
+      warnings.push(`${noSets.length} exercise(s) missing sets`)
+    }
+    
+    // Check for muscle imbalance (e.g., all push, no pull)
+    const coverage = getDayMuscleCoverage(day.exercises)
+    const hasPush = (coverage['chest'] || 0) + (coverage['shoulders'] || 0) + (coverage['triceps'] || 0)
+    const hasPull = (coverage['back'] || 0) + (coverage['biceps'] || 0)
+    if (hasPush > 0 && hasPull === 0 && day.exercises.length >= 3) {
+      warnings.push("Consider adding pulling exercises for balance")
+    }
+    if (hasPull > 0 && hasPush === 0 && day.exercises.length >= 3) {
+      warnings.push("Consider adding pushing exercises for balance")
+    }
+    
+    return warnings
+  }
+
+  // Get smart suggestions for exercises to add to a day
+  const getSmartSuggestions = (day: SplitDayInput): Exercise[] => {
+    if (!day.exercises || day.exercises.length === 0) return []
+    if (availableExercises.length === 0) return []
+    
+    const coverage = getDayMuscleCoverage(day.exercises)
+    const currentIds = new Set(day.exercises.map(e => e.exerciseId))
+    
+    // Find the primary muscle focus
+    const muscles = Object.entries(coverage).sort((a, b) => b[1] - a[1])
+    if (muscles.length === 0) return []
+    
+    const primaryMuscle = muscles[0][0]
+    
+    // Suggest complementary exercises for the same muscle group
+    const suggestions = availableExercises
+      .filter(ex => !currentIds.has(ex.id))
+      .filter(ex => {
+        const exMuscles = ex.muscleGroups?.toLowerCase() || ''
+        return exMuscles.includes(primaryMuscle)
+      })
+      .slice(0, 3)
+    
+    return suggestions
+  }
+
   const handleRemoveDay = (index: number) => {
     setSplitDays(splitDays.filter((_, i) => i !== index))
     if (expandedDayIndex === index) setExpandedDayIndex(null)
@@ -1291,6 +1369,33 @@ export default function TrainingPage() {
                         </div>
                       )}
                       
+                      {/* Muscle Coverage Visual */}
+                      {day.exercises && day.exercises.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {Object.entries(getDayMuscleCoverage(day.exercises)).map(([muscle, sets]) => (
+                            <span 
+                              key={muscle} 
+                              className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary capitalize"
+                              title={`${sets} sets for ${muscle}`}
+                            >
+                              {muscle} ({sets})
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Validation Warnings */}
+                      {getDayWarnings(day).length > 0 && (
+                        <div className="flex items-start gap-2 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded text-sm text-yellow-600 dark:text-yellow-400">
+                          <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                          <div className="space-y-1">
+                            {getDayWarnings(day).map((warning, i) => (
+                              <div key={i}>{warning}</div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
                       {/* Expanded Exercise Picker */}
                       {expandedDayIndex === index && (
                         <div className="border-t pt-4 space-y-4">
@@ -1380,6 +1485,33 @@ export default function TrainingPage() {
                                   ))}
                                 </div>
                               )}
+                            </div>
+                          )}
+                          
+                          {/* Smart Suggestions */}
+                          {day.exercises && day.exercises.length > 0 && getSmartSuggestions(day).length > 0 && (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <Sparkles className="h-4 w-4 text-primary" />
+                                <Label className="text-sm text-muted-foreground">Suggested Exercises</Label>
+                              </div>
+                              <div className="grid gap-1">
+                                {getSmartSuggestions(day).map(exercise => (
+                                  <Button
+                                    key={exercise.id}
+                                    variant="outline"
+                                    size="sm"
+                                    className="justify-start"
+                                    onClick={() => handleAddExerciseToDay(index, exercise)}
+                                  >
+                                    <Plus className="h-3 w-3 mr-2" />
+                                    <span className="truncate">{exercise.name}</span>
+                                    <span className="text-xs text-muted-foreground ml-auto">
+                                      {exercise.muscleGroups}
+                                    </span>
+                                  </Button>
+                                ))}
+                              </div>
                             </div>
                           )}
                           

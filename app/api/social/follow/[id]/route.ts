@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDevSession } from "@/lib/dev-auth";
 import prisma from "@/lib/db";
+import { createNotification, Notifications } from "@/lib/notifications";
 
 export async function POST(
   request: Request,
@@ -20,6 +21,15 @@ export async function POST(
         followingId: id,
       },
     });
+
+    // Notify the followed user
+    const follower = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { name: true },
+    });
+    if (follower?.name) {
+      await createNotification(id, Notifications.socialFollow(follower.name, session.user.id));
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

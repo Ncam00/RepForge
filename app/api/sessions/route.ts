@@ -4,6 +4,7 @@ import prisma from "@/lib/db";
 import { z } from "zod";
 import { awardXP, updateStreak, XP_REWARDS } from "@/lib/xp";
 import { rateLimit, WRITE_RATE_LIMIT } from "@/lib/rate-limit";
+import { createNotification, Notifications } from "@/lib/notifications";
 
 const sessionSchema = z.object({
   name: z.string().optional(),
@@ -214,6 +215,15 @@ export async function PATCH(req: NextRequest) {
           newLevel: workoutXP.newLevel,
           totalXp: workoutXP.totalXp,
         };
+      }
+
+      // Send level-up notification
+      if (xpResults.leveledUp) {
+        await createNotification(session.user.id, Notifications.levelUp(xpResults.newLevel));
+      }
+      // Send streak milestone notifications
+      if ([7, 14, 30, 60, 100, 365].includes(currentStreak)) {
+        await createNotification(session.user.id, Notifications.streakMilestone(currentStreak));
       }
     }
 

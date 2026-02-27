@@ -4,6 +4,7 @@ import prisma from "@/lib/db";
 import { z } from "zod";
 import { checkAndUpdatePRs } from "@/app/api/prs/route";
 import { awardXP, XP_REWARDS } from "@/lib/xp";
+import { createNotification, Notifications } from "@/lib/notifications";
 
 const setSchema = z.object({
   exerciseId: z.string().min(1, { message: "exerciseId is required" }),
@@ -160,6 +161,21 @@ export async function POST(
           newLevel: prXP.newLevel,
           totalXp: prXP.totalXp,
         } : prXP;
+
+        // Notify user of new PR
+        const prType = prResults.oneRepMax ? "one_rep_max" : "max_volume";
+        const prValue = prResults.oneRepMax
+          ? Math.round(exerciseSet.weight! * (1 + exerciseSet.reps! / 30))
+          : exerciseSet.weight! * exerciseSet.reps!;
+        await createNotification(
+          session.user.id,
+          Notifications.prAchieved(exerciseSet.exercise.name, prType, prValue, validatedData.exerciseId)
+        );
+
+        // Notify of level-up after PR XP
+        if (prXP.leveledUp) {
+          await createNotification(session.user.id, Notifications.levelUp(prXP.newLevel));
+        }
       }
     }
 

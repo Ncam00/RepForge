@@ -211,9 +211,9 @@ export default function TemplatesPage() {
     const templateData = {
       name,
       description,
-      category: category || null,
+      category: category || undefined,
       difficulty,
-      duration: duration ? parseInt(duration) : null,
+      duration: duration ? parseInt(duration) : undefined,
       exercises: selectedExercises.map((ex, index) => ({
         ...ex,
         order: index,
@@ -599,7 +599,7 @@ export default function TemplatesPage() {
                       <span className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs">
                         {ex.sets}
                       </span>
-                      <span>{ex.exercise.name}</span>
+                      <span>{ex.exercise?.name}</span>
                     </div>
                   ))}
                   {template.exercises?.length > 3 && (

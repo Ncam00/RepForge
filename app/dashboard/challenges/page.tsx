@@ -222,7 +222,7 @@ function ChallengeCard({
   };
 
   const progressPercentage = showProgress
-    ? Math.min((challenge.userProgress / challenge.target) * 100, 100)
+    ? Math.min((challenge.progress / challenge.goal) * 100, 100)
     : 0;
 
   return (
@@ -238,7 +238,7 @@ function ChallengeCard({
           </p>
         </div>
         <div className="text-blue-600 dark:text-blue-400">
-          {getCategoryIcon(challenge.category)}
+          {getCategoryIcon(challenge.category || "")}
         </div>
       </div>
 
@@ -284,7 +284,7 @@ function ChallengeCard({
           <div className="flex justify-between text-sm mb-2">
             <span className="text-gray-600 dark:text-gray-300">Progress</span>
             <span className="font-medium dark:text-gray-200">
-              {challenge.userProgress} / {challenge.target}
+              {challenge.progress} / {challenge.goal}
             </span>
           </div>
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">

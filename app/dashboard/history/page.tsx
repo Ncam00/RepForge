@@ -245,7 +245,7 @@ function ActiveWorkout({ session }: { session: WorkoutSession }) {
             <RestTimerWidget
               initialDuration={restTimerDuration}
               onComplete={() => setRestTimerDuration(null)}
-              onDismiss={() => setRestTimerDuration(null)}
+              onClose={() => setRestTimerDuration(null)}
               showPresets={false}
             />
           )}

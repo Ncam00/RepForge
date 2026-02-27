@@ -26,7 +26,14 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const limit = searchParams.get("limit");
+    const limitParam = searchParams.get("limit");
+    let limit: number | undefined;
+    if (limitParam !== null) {
+      limit = parseInt(limitParam, 10);
+      if (isNaN(limit) || limit < 1 || limit > 500) {
+        return NextResponse.json({ error: "limit must be a positive integer up to 500" }, { status: 400 });
+      }
+    }
 
     const sessions = await prisma.workoutSession.findMany({
       where: { userId: session.user.id },
@@ -45,7 +52,7 @@ export async function GET(req: NextRequest) {
         },
       },
       orderBy: { startedAt: "desc" },
-      take: limit ? parseInt(limit) : undefined,
+      take: limit,
     });
 
     const formatted = sessions.map((s) => ({
@@ -216,7 +223,7 @@ export async function PATCH(req: NextRequest) {
 // DELETE /api/sessions - Delete workout session
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await auth();
+    const session = await getDevSession();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

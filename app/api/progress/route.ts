@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getDevSession } from "@/lib/dev-auth";
 import prisma from "@/lib/db";
 import { getXpProgress, getLevelBadge } from "@/lib/xp";
 
 export async function GET() {
   try {
-    const session = await auth();
+    const session = await getDevSession();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -57,7 +57,7 @@ export async function GET() {
 // Award XP to user
 export async function POST(request: Request) {
   try {
-    const session = await auth();
+    const session = await getDevSession();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

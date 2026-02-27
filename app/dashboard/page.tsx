@@ -30,7 +30,7 @@ export default function DashboardPage() {
     },
   })
 
-  const stats = data?.stats || {}
+  const stats = (data?.stats || {}) as DashboardStats
   const recentPRs = (data?.recentPRs || []) as PersonalRecord[]
   const recentSessions = (data?.recentSessions || []) as WorkoutSession[]
   const weightHistory = (data?.weightHistory || []) as Array<{ date: string; weight: number }>
@@ -70,7 +70,7 @@ export default function DashboardPage() {
                 <div className="text-2xl font-bold">
                   {stats.currentWeight} {stats.weightUnit}
                 </div>
-                {stats.weightChange !== null && (
+                {stats.weightChange != null && (
                   <p className="text-xs flex items-center gap-1 text-muted-foreground mt-1">
                     {stats.weightChange > 0 ? (
                       <TrendingUp className="h-3 w-3 text-red-500" />
@@ -306,7 +306,7 @@ export default function DashboardPage() {
                       {session.totalSets} sets
                       {session.duration && ` • ${session.duration} min`}
                     </div>
-                    {session.exercises.length > 0 && (
+                    {session.exercises && session.exercises.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2">
                         {session.exercises.slice(0, 3).map((ex: string, i: number) => (
                           <span

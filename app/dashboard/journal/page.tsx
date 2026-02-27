@@ -92,10 +92,10 @@ export default function JournalPage() {
     createMutation.mutate({
       title,
       content,
-      mood: mood || null,
-      energyLevel,
-      sleepQuality,
-      bodyWeight: bodyWeight ? parseFloat(bodyWeight) : null,
+      mood: mood || undefined,
+      energyLevel: energyLevel ?? undefined,
+      sleepQuality: sleepQuality === null ? undefined : sleepQuality,
+      bodyWeight: bodyWeight ? parseFloat(bodyWeight) : undefined,
       notes,
     });
   };
@@ -255,7 +255,7 @@ export default function JournalPage() {
       {/* Entries List */}
       {isLoading ? (
         <div className="text-center py-12 text-gray-500">Loading entries...</div>
-      ) : entries?.length === 0 ? (
+      ) : entries?.entries?.length === 0 ? (
         <div className="bg-white p-12 rounded-lg border text-center">
           <BookOpen className="w-12 h-12 mx-auto text-gray-300 mb-3" />
           <p className="text-gray-500">No journal entries yet. Start writing!</p>

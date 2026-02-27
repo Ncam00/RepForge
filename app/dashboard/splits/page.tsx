@@ -978,7 +978,7 @@ export default function TrainingPage() {
     if (expandedDayIndex === index) setExpandedDayIndex(null)
   }
 
-  const handleDayChange = (index: number, field: string, value: string | number) => {
+  const handleDayChange = (index: number, field: string, value: string | number | boolean) => {
     const updated = [...splitDays]
     updated[index] = { ...updated[index], [field]: value }
     setSplitDays(updated)

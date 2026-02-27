@@ -121,12 +121,17 @@ export async function POST(request: NextRequest) {
       }))
 
       try {
-        await prisma.heartRateSample.createMany({
-          data: samples,
-          skipDuplicates: true
-        })
-        results.heartRateSamplesProcessed = samples.length
-      } catch {
+        const hrResults = await Promise.allSettled(
+          samples.map(sample =>
+            prisma.heartRateSample.upsert({
+              where: { userId_timestamp: { userId: sample.userId, timestamp: sample.timestamp } },
+              update: {},
+              create: sample,
+            })
+          )
+        )
+        results.heartRateSamplesProcessed = hrResults.filter(r => r.status === "fulfilled").length
+      } catch (error) {
         results.errors.push("Failed to process heart rate samples")
       }
     }
@@ -197,7 +202,7 @@ export async function POST(request: NextRequest) {
       message: "Sync completed",
       results
     })
-  } catch {
+  } catch (error) {
     console.error("HealthKit sync error:", error)
     return NextResponse.json({ error: "Failed to sync HealthKit data" }, { status: 500 })
   }
@@ -267,7 +272,7 @@ export async function GET() {
         steps: todaySteps?.steps || 0
       }
     })
-  } catch {
+  } catch (error) {
     console.error("Error fetching HealthKit status:", error)
     return NextResponse.json({ error: "Failed to fetch sync status" }, { status: 500 })
   }

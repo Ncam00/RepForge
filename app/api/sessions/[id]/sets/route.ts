@@ -6,12 +6,12 @@ import { checkAndUpdatePRs } from "@/app/api/prs/route";
 import { awardXP, XP_REWARDS } from "@/lib/xp";
 
 const setSchema = z.object({
-  exerciseId: z.string(),
-  setNumber: z.number().int().min(1),
-  weight: z.number().optional(),
-  reps: z.number().int().min(0).optional(),
-  rpe: z.number().min(1).max(10).optional(),
-  restTime: z.number().int().min(0).optional(),
+  exerciseId: z.string().min(1, { message: "exerciseId is required" }),
+  setNumber: z.number().int().min(1, { message: "setNumber must be at least 1" }),
+  weight: z.number().min(0, { message: "weight must be non-negative" }).optional(),
+  reps: z.number().int().min(0, { message: "reps must be non-negative" }).optional(),
+  rpe: z.number().min(1).max(10, { message: "RPE must be between 1 and 10" }).optional(),
+  restTime: z.number().int().min(0, { message: "restTime must be non-negative" }).optional(),
   isWarmup: z.boolean().optional(),
   notes: z.string().optional(),
 });
@@ -22,7 +22,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth();
+    const session = await getDevSession();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -144,7 +144,7 @@ export async function POST(
       );
 
       // Award PR XP if new PR was set
-      if (prResults && (prResults.newOneRepMax || prResults.newVolumeRecord)) {
+      if (prResults && (prResults.oneRepMax || prResults.maxVolume)) {
         const prXP = await awardXP(
           session.user.id,
           XP_REWARDS.PR_SET,

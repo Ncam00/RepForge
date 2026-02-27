@@ -143,7 +143,7 @@ export default function CalendarPage() {
                   <div className="text-sm font-medium">{format(day, "d")}</div>
                   {hasWorkouts && (
                     <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex gap-0.5">
-                      {workouts.slice(0, 3).map((_, i) => (
+                      {workouts.slice(0, 3).map((_: unknown, i: number) => (
                         <div
                           key={i}
                           className="w-1.5 h-1.5 bg-green-600 rounded-full"

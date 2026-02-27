@@ -9,33 +9,22 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const following = await prisma.follow.findMany({
+    const followRecords = await prisma.follow.findMany({
       where: { followerId: session.user.id },
-      include: {
-        following: {
-          select: {
-            id: true,
-            name: true,
-            _count: {
-              select: {
-                sessions: true,
-              },
-            },
-          },
-        },
-      },
     });
 
     const followingWithStats = await Promise.all(
-      following.map(async (f: any) => {
-        const followerCount = await prisma.follow.count({
-          where: { followingId: f.followingId },
-        });
+      followRecords.map(async (f) => {
+        const [user, followerCount, workoutCount] = await Promise.all([
+          prisma.user.findUnique({ where: { id: f.followingId }, select: { id: true, name: true } }),
+          prisma.follow.count({ where: { followingId: f.followingId } }),
+          prisma.workoutSession.count({ where: { userId: f.followingId } }),
+        ]);
 
         return {
           id: f.followingId,
-          name: f.following.name,
-          workoutCount: f.following._count.sessions,
+          name: user?.name,
+          workoutCount,
           followers: followerCount,
         };
       })

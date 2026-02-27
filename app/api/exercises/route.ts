@@ -43,8 +43,8 @@ export async function GET(req: Request) {
         } : {}),
         ...(search ? {
           OR: [
-            { name: { contains: search, mode: "insensitive" } },
-            { description: { contains: search, mode: "insensitive" } },
+            { name: { contains: search } },
+            { description: { contains: search } },
           ],
         } : {}),
       },
@@ -110,7 +110,7 @@ export async function POST(req: Request) {
 
 export async function PATCH(req: Request) {
   try {
-    const session = await auth()
+    const session = await getDevSession()
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }

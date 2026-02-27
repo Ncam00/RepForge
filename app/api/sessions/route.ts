@@ -3,6 +3,7 @@ import { getDevSession } from "@/lib/dev-auth";
 import prisma from "@/lib/db";
 import { z } from "zod";
 import { awardXP, updateStreak, XP_REWARDS } from "@/lib/xp";
+import { rateLimit, WRITE_RATE_LIMIT } from "@/lib/rate-limit";
 
 const sessionSchema = z.object({
   name: z.string().optional(),
@@ -82,6 +83,15 @@ export async function POST(req: NextRequest) {
     const session = await getDevSession();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Rate limit: 60 session creations per minute per user
+    const rl = rateLimit(`sessions-post:${session.user.id}`, WRITE_RATE_LIMIT);
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: "Too many requests. Please slow down." },
+        { status: 429, headers: { "Retry-After": String(Math.ceil((rl.reset - Date.now()) / 1000)) } }
+      );
     }
 
     const body = await req.json();

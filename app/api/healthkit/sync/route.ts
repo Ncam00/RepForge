@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import prisma from "@/lib/db"
 import { getDevSession } from "@/lib/dev-auth"
+import { rateLimit, HEALTHKIT_RATE_LIMIT } from "@/lib/rate-limit"
 
 // Types for HealthKit data from Apple Watch
 interface HealthKitWorkout {
@@ -37,6 +38,21 @@ export async function POST(request: NextRequest) {
   const session = await getDevSession()
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  // Rate limit: 30 syncs per hour per user
+  const rl = rateLimit(`healthkit-sync:${session.user.id}`, HEALTHKIT_RATE_LIMIT)
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: "Sync rate limit exceeded. Please wait before syncing again." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.ceil((rl.reset - Date.now()) / 1000)),
+          "X-RateLimit-Remaining": "0",
+        },
+      }
+    )
   }
 
   try {

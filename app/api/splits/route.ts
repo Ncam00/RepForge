@@ -4,12 +4,12 @@ import prisma from "@/lib/db"
 import { z } from "zod"
 
 const splitSchema = z.object({
-  name: z.string().min(1),
+  name: z.string().trim().min(1, { message: "Split name is required" }),
   description: z.string().optional(),
   isActive: z.boolean().optional(),
   days: z.array(z.object({
-    dayOfWeek: z.number().min(0).max(6),
-    name: z.string().min(1),
+    dayOfWeek: z.number().int({ message: "dayOfWeek must be an integer" }).min(0, { message: "dayOfWeek must be 0-6" }).max(6, { message: "dayOfWeek must be 0-6" }),
+    name: z.string().trim().min(1, { message: "Day name is required" }),
     description: z.string().optional(),
     order: z.number().optional(),
   })).optional(),
@@ -112,9 +112,10 @@ export async function PATCH(req: Request) {
     const { searchParams } = new URL(req.url)
     const id = searchParams.get("id")
 
-    if (!id) {
+
+    if (!id || typeof id !== "string" || id.length < 8) {
       return NextResponse.json(
-        { error: "Split ID required" },
+        { error: "Valid split ID required" },
         { status: 400 }
       )
     }
@@ -123,10 +124,16 @@ export async function PATCH(req: Request) {
       where: { id },
     })
 
-    if (!split || split.userId !== session.user.id) {
+    if (!split) {
       return NextResponse.json(
         { error: "Split not found" },
         { status: 404 }
+      )
+    }
+    if (split.userId !== session.user.id) {
+      return NextResponse.json(
+        { error: "Forbidden: Not your split" },
+        { status: 403 }
       )
     }
 
@@ -178,9 +185,10 @@ export async function DELETE(req: Request) {
     const { searchParams } = new URL(req.url)
     const id = searchParams.get("id")
 
-    if (!id) {
+
+    if (!id || typeof id !== "string" || id.length < 8) {
       return NextResponse.json(
-        { error: "Split ID required" },
+        { error: "Valid split ID required" },
         { status: 400 }
       )
     }
@@ -189,10 +197,16 @@ export async function DELETE(req: Request) {
       where: { id },
     })
 
-    if (!split || split.userId !== session.user.id) {
+    if (!split) {
       return NextResponse.json(
         { error: "Split not found" },
         { status: 404 }
+      )
+    }
+    if (split.userId !== session.user.id) {
+      return NextResponse.json(
+        { error: "Forbidden: Not your split" },
+        { status: 403 }
       )
     }
 

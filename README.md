@@ -100,12 +100,12 @@ A fitness application designed to streamline training, track progress, and visua
 | Analytics Dashboard              | Volume, top exercises, trends  | Medium   | v1.4    | ✅ Complete  |
 | Notifications & Reminders        | PRs, streaks, social alerts    | Medium   | v1.4    | ✅ Complete  |
 | Community Challenges             | Social features, leaderboard   | Low      | v2.1    | ✅ Complete  |
-| Nutrition Tracking               | Meals, macros                  | Low      | v2.0    | 📋 Planned   |
+| Nutrition Tracking               | Meals, macros                  | Low      | v2.0    | ✅ Complete  |
 
 * ✅ Auto PR detection and tracking.
 * ✅ Progressive overload suggestions based on past performance.
 * ✅ Analytics dashboard (volume over time, top exercises, strength trends).
 * ✅ Community challenges and social features (leaderboard, achievement sharing, following).
 * ✅ In-app notifications (PR alerts, streak milestones, level-ups, social events).
-* Add nutrition tracking.
+* ✅ Nutrition tracking (food log, macro goals, trend charts, food database).
 * Build customizable widgets for quick progress overview.

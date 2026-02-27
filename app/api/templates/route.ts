@@ -32,11 +32,29 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const showPublic = searchParams.get("public") === "true";
+    const search = searchParams.get("search")?.trim();
+    const category = searchParams.get("category");
+    const difficulty = searchParams.get("difficulty");
+    const limitParam = searchParams.get("limit");
+    const limit = limitParam ? Math.min(Math.max(1, parseInt(limitParam, 10)), 100) : undefined;
+
+    // Build filter
+    const where = showPublic
+      ? {
+          isPublic: true,
+          ...(search ? { name: { contains: search } } : {}),
+          ...(category ? { category } : {}),
+          ...(difficulty ? { difficulty } : {}),
+        }
+      : {
+          userId: session.user.id,
+          ...(search ? { name: { contains: search } } : {}),
+          ...(category ? { category } : {}),
+          ...(difficulty ? { difficulty } : {}),
+        };
 
     const templates = await prisma.workoutTemplate.findMany({
-      where: showPublic
-        ? { isPublic: true }
-        : { userId: session.user.id },
+      where,
       include: {
         exercises: {
           include: {
@@ -50,9 +68,29 @@ export async function GET(req: NextRequest) {
       orderBy: {
         createdAt: "desc",
       },
+      ...(limit ? { take: limit } : {}),
     });
 
-    return NextResponse.json(templates);
+    // For public templates, count how many the current user already has copied
+    const userTemplateIds = showPublic
+      ? new Set(
+          (
+            await prisma.workoutTemplate.findMany({
+              where: { userId: session.user.id },
+              select: { name: true },
+            })
+          ).map((t) => t.name)
+        )
+      : null;
+
+    const result = templates.map((t) => ({
+      ...t,
+      isSaved: userTemplateIds
+        ? userTemplateIds.has(t.name) || userTemplateIds.has(`${t.name} (Copy)`)
+        : undefined,
+    }));
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error("Error fetching templates:", error);
     return NextResponse.json(

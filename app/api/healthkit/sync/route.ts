@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import prisma from "@/lib/db"
 import { getDevSession } from "@/lib/dev-auth"
+import { rateLimit, HEALTHKIT_RATE_LIMIT } from "@/lib/rate-limit"
 
 // Types for HealthKit data from Apple Watch
 interface HealthKitWorkout {
@@ -37,6 +38,21 @@ export async function POST(request: NextRequest) {
   const session = await getDevSession()
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  // Rate limit: 30 syncs per hour per user
+  const rl = rateLimit(`healthkit-sync:${session.user.id}`, HEALTHKIT_RATE_LIMIT)
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: "Sync rate limit exceeded. Please wait before syncing again." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.ceil((rl.reset - Date.now()) / 1000)),
+          "X-RateLimit-Remaining": "0",
+        },
+      }
+    )
   }
 
   try {
@@ -121,12 +137,17 @@ export async function POST(request: NextRequest) {
       }))
 
       try {
-        await prisma.heartRateSample.createMany({
-          data: samples,
-          skipDuplicates: true
-        })
-        results.heartRateSamplesProcessed = samples.length
-      } catch {
+        const hrResults = await Promise.allSettled(
+          samples.map(sample =>
+            prisma.heartRateSample.upsert({
+              where: { userId_timestamp: { userId: sample.userId, timestamp: sample.timestamp } },
+              update: {},
+              create: sample,
+            })
+          )
+        )
+        results.heartRateSamplesProcessed = hrResults.filter(r => r.status === "fulfilled").length
+      } catch (error) {
         results.errors.push("Failed to process heart rate samples")
       }
     }
@@ -197,7 +218,7 @@ export async function POST(request: NextRequest) {
       message: "Sync completed",
       results
     })
-  } catch {
+  } catch (error) {
     console.error("HealthKit sync error:", error)
     return NextResponse.json({ error: "Failed to sync HealthKit data" }, { status: 500 })
   }
@@ -267,7 +288,7 @@ export async function GET() {
         steps: todaySteps?.steps || 0
       }
     })
-  } catch {
+  } catch (error) {
     console.error("Error fetching HealthKit status:", error)
     return NextResponse.json({ error: "Failed to fetch sync status" }, { status: 500 })
   }

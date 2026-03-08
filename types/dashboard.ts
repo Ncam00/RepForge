@@ -82,17 +82,23 @@ export interface TemplateExercise {
 }
 
 export interface DashboardStats {
-  currentWeight?: number;
-  weightChange?: number;
+  currentWeight?: number | null;
+  weightChange?: number | null;
   weightUnit: string;
-  sessionsThisWeek: number;
-  sessionsThisMonth: number;
-  totalExercises: number;
+  workoutsThisWeek: number;
+  workoutsThisMonth: number;
   totalVolume: number;
-  recentSessions: WorkoutSession[];
-  recentPRs: PersonalRecord[];
-  streakDays: number;
-  totalWorkouts: number;
+  activeSplit: { name: string; daysCount: number } | null;
+  totalPRs: number;
+  streak: number;
+  // Legacy field aliases (kept for compatibility)
+  sessionsThisWeek?: number;
+  sessionsThisMonth?: number;
+  streakDays?: number;
+  totalWorkouts?: number;
+  totalExercises?: number;
+  recentSessions?: WorkoutSession[];
+  recentPRs?: PersonalRecord[];
 }
 
 export interface Challenge {
@@ -100,12 +106,19 @@ export interface Challenge {
   title: string;
   description: string;
   goal: number;
+  target: string;
   unit: string;
   startDate: string;
   endDate: string;
   isJoined: boolean;
   progress: number;
   participants: number;
+  participantCount: number;
+  maxParticipants?: number | null;
+  creatorName?: string;
+  category?: string;
+  xpReward?: number;
+  userStatus?: string;
 }
 
 export interface JournalEntry {
@@ -136,6 +149,11 @@ export interface SocialShare {
   userAvatar?: string;
   isLiked?: boolean;
   commentCount?: number;
+  comments?: Array<{ id: string; userId: string; userName?: string; content: string; createdAt: string }>;
+  sessionName?: string;
+  duration?: number;
+  totalSets?: number;
+  totalVolume?: number;
 }
 
 export interface Achievement {

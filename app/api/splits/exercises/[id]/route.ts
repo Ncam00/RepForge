@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getDevSession } from "@/lib/dev-auth";
 import prisma from "@/lib/db";
 import { z } from "zod";
 
@@ -17,7 +17,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
+    const session = await getDevSession();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -38,7 +38,7 @@ export async function PATCH(
 
     if (
       !splitDayExercise ||
-      splitDayExercise.splitDay.workoutSplit.userId !== user.id
+      splitDayExercise.splitDay.workoutSplit.userId !== session.user.id
     ) {
       return NextResponse.json(
         { error: "Split day exercise not found" },
@@ -85,7 +85,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
+    const session = await getDevSession();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -106,7 +106,7 @@ export async function DELETE(
 
     if (
       !splitDayExercise ||
-      splitDayExercise.splitDay.workoutSplit.userId !== user.id
+      splitDayExercise.splitDay.workoutSplit.userId !== session.user.id
     ) {
       return NextResponse.json(
         { error: "Split day exercise not found" },

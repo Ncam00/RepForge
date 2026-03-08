@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDevSession } from "@/lib/dev-auth";
 import prisma from "@/lib/db";
+import { createNotification, Notifications } from "@/lib/notifications";
 
 export async function POST(
   request: Request,
@@ -21,10 +22,25 @@ export async function POST(
       },
     });
 
-    await prisma.workoutShare.update({
+    const updatedShare = await prisma.workoutShare.update({
       where: { id },
       data: { likes: { increment: 1 } },
+      select: { userId: true, caption: true },
     });
+
+    // Don't notify yourself
+    if (updatedShare.userId !== session.user.id) {
+      const liker = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { name: true },
+      });
+      if (liker?.name) {
+        await createNotification(
+          updatedShare.userId,
+          Notifications.socialLike(liker.name, updatedShare.caption || "workout", id)
+        );
+      }
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -3,6 +3,8 @@ import { getDevSession } from "@/lib/dev-auth";
 import prisma from "@/lib/db";
 import { z } from "zod";
 import { awardXP, updateStreak, XP_REWARDS } from "@/lib/xp";
+import { rateLimit, WRITE_RATE_LIMIT } from "@/lib/rate-limit";
+import { createNotification, Notifications } from "@/lib/notifications";
 
 const sessionSchema = z.object({
   name: z.string().optional(),
@@ -26,7 +28,14 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const limit = searchParams.get("limit");
+    const limitParam = searchParams.get("limit");
+    let limit: number | undefined;
+    if (limitParam !== null) {
+      limit = parseInt(limitParam, 10);
+      if (isNaN(limit) || limit < 1 || limit > 500) {
+        return NextResponse.json({ error: "limit must be a positive integer up to 500" }, { status: 400 });
+      }
+    }
 
     const sessions = await prisma.workoutSession.findMany({
       where: { userId: session.user.id },
@@ -45,7 +54,7 @@ export async function GET(req: NextRequest) {
         },
       },
       orderBy: { startedAt: "desc" },
-      take: limit ? parseInt(limit) : undefined,
+      take: limit,
     });
 
     const formatted = sessions.map((s) => ({
@@ -75,6 +84,15 @@ export async function POST(req: NextRequest) {
     const session = await getDevSession();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Rate limit: 60 session creations per minute per user
+    const rl = rateLimit(`sessions-post:${session.user.id}`, WRITE_RATE_LIMIT);
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: "Too many requests. Please slow down." },
+        { status: 429, headers: { "Retry-After": String(Math.ceil((rl.reset - Date.now()) / 1000)) } }
+      );
     }
 
     const body = await req.json();
@@ -198,6 +216,15 @@ export async function PATCH(req: NextRequest) {
           totalXp: workoutXP.totalXp,
         };
       }
+
+      // Send level-up notification
+      if (xpResults.leveledUp) {
+        await createNotification(session.user.id, Notifications.levelUp(xpResults.newLevel));
+      }
+      // Send streak milestone notifications
+      if ([7, 14, 30, 60, 100, 365].includes(currentStreak)) {
+        await createNotification(session.user.id, Notifications.streakMilestone(currentStreak));
+      }
     }
 
     return NextResponse.json({ session: updated, xpResults });
@@ -216,7 +243,7 @@ export async function PATCH(req: NextRequest) {
 // DELETE /api/sessions - Delete workout session
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await auth();
+    const session = await getDevSession();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

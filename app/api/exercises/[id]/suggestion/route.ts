@@ -35,6 +35,19 @@ export async function GET(
 
     const { id: exerciseId } = await params;
 
+    // Input validation: must be a non-empty string, optionally UUID format
+    if (!exerciseId || typeof exerciseId !== "string" || exerciseId.length < 8) {
+      return NextResponse.json({ error: "Invalid exerciseId parameter" }, { status: 400 });
+    }
+
+    // Check if exercise exists for this user
+    const exercise = await prisma.exercise.findUnique({
+      where: { id: exerciseId },
+    });
+    if (!exercise) {
+      return NextResponse.json({ error: "Exercise not found" }, { status: 404 });
+    }
+
     // Get recent working sets for this exercise (last 30 days, non-warmup)
     const recentSets = await prisma.exerciseSet.findMany({
       where: {

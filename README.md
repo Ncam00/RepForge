@@ -94,13 +94,18 @@ A fitness application designed to streamline training, track progress, and visua
 | Weight Tracking                  | Graphs, comparisons, analytics | High     | v1.0    | ✅ Complete  |
 | Training Splits                  | Customizable routines          | High     | v1.0    | ✅ Complete  |
 | Exercise Library                 | Videos, muscles, tips          | High     | v1.1    | ✅ Complete  |
-| Session History                  | Past session comparisons       | High     | v1.1    | 🚧 In Progress |
-| PR Tracking                      | Auto PR detection              | Medium   | v1.2    | 📋 Planned   |
-| Progressive Overload Suggestions | Smart recommendations          | Medium   | v1.3    | 📋 Planned   |
+| Session History                  | Past session comparisons       | High     | v1.1    | ✅ Complete  |
+| PR Tracking                      | Auto PR detection              | Medium   | v1.2    | ✅ Complete  |
+| Progressive Overload Suggestions | Smart recommendations          | Medium   | v1.3    | ✅ Complete  |
+| Analytics Dashboard              | Volume, top exercises, trends  | Medium   | v1.4    | ✅ Complete  |
+| Notifications & Reminders        | PRs, streaks, social alerts    | Medium   | v1.4    | ✅ Complete  |
+| Community Challenges             | Social features, leaderboard   | Low      | v2.1    | ✅ Complete  |
 | Nutrition Tracking               | Meals, macros                  | Low      | v2.0    | 📋 Planned   |
-| Community Challenges             | Social features                | Low      | v2.1    | 📋 Planned   |
 
+* ✅ Auto PR detection and tracking.
+* ✅ Progressive overload suggestions based on past performance.
+* ✅ Analytics dashboard (volume over time, top exercises, strength trends).
+* ✅ Community challenges and social features (leaderboard, achievement sharing, following).
+* ✅ In-app notifications (PR alerts, streak milestones, level-ups, social events).
 * Add nutrition tracking.
-* Include community challenges.
 * Build customizable widgets for quick progress overview.
-* Create analytics dashboard (volume over time, top exercises, etc.).

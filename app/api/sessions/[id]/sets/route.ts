@@ -4,14 +4,15 @@ import prisma from "@/lib/db";
 import { z } from "zod";
 import { checkAndUpdatePRs } from "@/app/api/prs/route";
 import { awardXP, XP_REWARDS } from "@/lib/xp";
+import { createNotification, Notifications } from "@/lib/notifications";
 
 const setSchema = z.object({
-  exerciseId: z.string(),
-  setNumber: z.number().int().min(1),
-  weight: z.number().optional(),
-  reps: z.number().int().min(0).optional(),
-  rpe: z.number().min(1).max(10).optional(),
-  restTime: z.number().int().min(0).optional(),
+  exerciseId: z.string().min(1, { message: "exerciseId is required" }),
+  setNumber: z.number().int().min(1, { message: "setNumber must be at least 1" }),
+  weight: z.number().min(0, { message: "weight must be non-negative" }).optional(),
+  reps: z.number().int().min(0, { message: "reps must be non-negative" }).optional(),
+  rpe: z.number().min(1).max(10, { message: "RPE must be between 1 and 10" }).optional(),
+  restTime: z.number().int().min(0, { message: "restTime must be non-negative" }).optional(),
   isWarmup: z.boolean().optional(),
   notes: z.string().optional(),
 });
@@ -22,7 +23,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth();
+    const session = await getDevSession();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -144,7 +145,7 @@ export async function POST(
       );
 
       // Award PR XP if new PR was set
-      if (prResults && (prResults.newOneRepMax || prResults.newVolumeRecord)) {
+      if (prResults && (prResults.oneRepMax || prResults.maxVolume)) {
         const prXP = await awardXP(
           session.user.id,
           XP_REWARDS.PR_SET,
@@ -160,6 +161,21 @@ export async function POST(
           newLevel: prXP.newLevel,
           totalXp: prXP.totalXp,
         } : prXP;
+
+        // Notify user of new PR
+        const prType = prResults.oneRepMax ? "one_rep_max" : "max_volume";
+        const prValue = prResults.oneRepMax
+          ? Math.round(exerciseSet.weight! * (1 + exerciseSet.reps! / 30))
+          : exerciseSet.weight! * exerciseSet.reps!;
+        await createNotification(
+          session.user.id,
+          Notifications.prAchieved(exerciseSet.exercise.name, prType, prValue, validatedData.exerciseId)
+        );
+
+        // Notify of level-up after PR XP
+        if (prXP.leveledUp) {
+          await createNotification(session.user.id, Notifications.levelUp(prXP.newLevel));
+        }
       }
     }
 

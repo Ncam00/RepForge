@@ -98,14 +98,21 @@ export async function POST(request: NextRequest) {
       motionContext: sample.motionContext || "notSet"
     }))
 
-    await prisma.heartRateSample.createMany({
-      data,
-      skipDuplicates: true
-    })
+    // Insert samples one by one, ignoring duplicates (SQLite doesn't support createMany skipDuplicates)
+    const results = await Promise.allSettled(
+      data.map(sample =>
+        prisma.heartRateSample.upsert({
+          where: { userId_timestamp: { userId: sample.userId, timestamp: sample.timestamp } },
+          update: {},
+          create: sample,
+        })
+      )
+    )
+    const samplesAdded = results.filter(r => r.status === "fulfilled").length
 
     return NextResponse.json({
       success: true,
-      samplesAdded: data.length
+      samplesAdded
     })
   } catch (error) {
     console.error("Error adding heart rate samples:", error)

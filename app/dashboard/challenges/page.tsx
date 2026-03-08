@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { Challenge } from "@/types/dashboard";
+import { EmptyState } from "@/components/ui/empty-state";
+import { CardGridSkeleton } from "@/components/ui/skeleton-cards";
 
 type Tab = "active" | "my-challenges" | "create";
 
@@ -106,11 +108,7 @@ function ActiveChallengesTab() {
   });
 
   if (isLoading) {
-    return (
-      <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-        Loading challenges...
-      </div>
-    );
+    return <CardGridSkeleton cols={3} count={6} />;
   }
 
   const activeChallenges = challenges?.challenges?.filter(
@@ -119,15 +117,12 @@ function ActiveChallengesTab() {
 
   if (!activeChallenges?.length) {
     return (
-      <div className="text-center py-12">
-        <Trophy className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-        <p className="text-gray-600 dark:text-gray-300">
-          No active challenges available
-        </p>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Create a challenge to get started!
-        </p>
-      </div>
+      <EmptyState
+        icon={Trophy}
+        title="No challenges available"
+        description="All available challenges have been joined. Create your own to keep pushing!"
+        action={{ label: "Create a Challenge", href: "#" }}
+      />
     );
   }
 
@@ -151,26 +146,18 @@ function MyChallengesTab() {
   });
 
   if (isLoading) {
-    return (
-      <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-        Loading...
-      </div>
-    );
+    return <CardGridSkeleton cols={3} count={3} />;
   }
 
   const myChallenges = challenges?.challenges?.filter((c: Challenge) => c.isJoined);
 
   if (!myChallenges?.length) {
     return (
-      <div className="text-center py-12">
-        <Target className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-        <p className="text-gray-600 dark:text-gray-300">
-          You haven't joined any challenges yet
-        </p>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Browse active challenges to get started!
-        </p>
-      </div>
+      <EmptyState
+        icon={Target}
+        title="No challenges joined yet"
+        description="Browse active challenges and join one to start earning XP and tracking your progress."
+      />
     );
   }
 

@@ -19,6 +19,8 @@ import {
 import { format } from "date-fns";
 import Link from "next/link";
 import { SocialShare, Achievement, SocialUser, LeaderboardEntry } from "@/types/dashboard";
+import { EmptyState } from "@/components/ui/empty-state";
+import { FeedSkeleton } from "@/components/ui/skeleton-cards";
 
 type Tab = "feed" | "following" | "leaderboard" | "achievements";
 
@@ -124,18 +126,17 @@ function FeedTab() {
   });
 
   if (isLoading) {
-    return <div className="text-center py-12 text-gray-500">Loading feed...</div>;
+    return <FeedSkeleton count={3} />;
   }
 
   if (!feed?.shares?.length) {
     return (
-      <div className="text-center py-12">
-        <Share2 className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-        <p className="text-gray-600">No workout shares yet</p>
-        <p className="text-sm text-gray-500 mt-1">
-          Complete a workout and share it to see it here!
-        </p>
-      </div>
+      <EmptyState
+        icon={Share2}
+        title="No workout shares yet"
+        description="Complete a workout and share it with the community to see your feed come alive."
+        action={{ label: "Log a Workout", href: "/dashboard/history" }}
+      />
     );
   }
 
@@ -262,10 +263,12 @@ function FollowingTab() {
           Following ({following?.users?.length || 0})
         </h2>
         {!following?.users?.length ? (
-          <div className="text-center py-8 bg-gray-50 rounded-lg">
-            <Users className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-            <p className="text-gray-600 dark:text-gray-300">Not following anyone yet</p>
-          </div>
+          <EmptyState
+            icon={Users}
+            title="Not following anyone yet"
+            description="Discover other athletes below and follow them to see their workouts here."
+            className="py-8"
+          />
         ) : (
           <div className="space-y-3">
             {following.users.map((user: SocialUser) => (
@@ -395,10 +398,12 @@ function LeaderboardTab() {
       {isLoading ? (
         <div className="text-center py-12 text-gray-500">Loading...</div>
       ) : !leaderboard?.entries?.length ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <TrendingUp className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-          <p className="text-gray-600 dark:text-gray-300">No leaderboard data yet</p>
-        </div>
+        <EmptyState
+          icon={TrendingUp}
+          title="No leaderboard data yet"
+          description="Log workouts to appear on the leaderboard and compete with the community."
+          action={{ label: "Log a Workout", href: "/dashboard/history" }}
+        />
       ) : (
         <div className="space-y-2">
           {leaderboard.entries.map((entry: LeaderboardEntryWithUser, index: number) => (
@@ -467,13 +472,13 @@ function AchievementsTab() {
           Unlocked ({unlocked.length})
         </h2>
         {!unlocked.length ? (
-          <div className="text-center py-8 bg-gray-50 rounded-lg">
-            <Trophy className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-            <p className="text-gray-600 dark:text-gray-300">No achievements yet</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Complete workouts to unlock achievements!
-            </p>
-          </div>
+          <EmptyState
+            icon={Trophy}
+            title="No achievements yet"
+            description="Complete workouts, hit personal records, and stay consistent to unlock achievements."
+            action={{ label: "Start Training", href: "/dashboard/history" }}
+            className="py-8"
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {unlocked.map((achievement: Achievement) => (

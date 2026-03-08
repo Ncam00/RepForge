@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Copy, Play, Trash2, Edit, Clock, X, LayoutTemplate, Globe } from "lucide-react";
 import { WorkoutTemplate, Exercise, TemplateExercise } from "@/types/dashboard";
 import { EmptyState } from "@/components/ui/empty-state";
+import { CardGridSkeleton } from "@/components/ui/skeleton-cards";
 
 interface CreateTemplateData {
   name: string;
@@ -531,9 +532,7 @@ export default function TemplatesPage() {
 
       {/* Templates List */}
       {isLoading ? (
-        <div className="text-center py-12 text-gray-500">
-          Loading templates...
-        </div>
+        <CardGridSkeleton cols={3} count={6} />
       ) : templates?.length === 0 ? (
         showPublic ? (
           <EmptyState

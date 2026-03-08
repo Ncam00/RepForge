@@ -13,6 +13,7 @@ import OverloadSuggestionCard from "@/components/OverloadSuggestion"
 import { PRCelebration } from "@/components/ui/pr-celebration"
 import { RestTimerWidget } from "@/components/ui/rest-timer"
 import { EmptyState } from "@/components/ui/empty-state"
+import { SessionListSkeleton } from "@/components/ui/skeleton-cards"
 
 interface SetData {
   exerciseId: string;
@@ -531,7 +532,7 @@ export default function HistoryPage() {
       {activeSession && <ActiveWorkout session={activeSession} />}
 
       {isLoading ? (
-        <p className="text-muted-foreground">Loading sessions...</p>
+        <SessionListSkeleton count={4} />
       ) : completedSessions.length === 0 && !activeSession ? (
         <EmptyState
           icon={Dumbbell}

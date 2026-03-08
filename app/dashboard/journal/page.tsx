@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { Plus, Edit, Trash2, BookOpen, Smile, Frown, Meh, Battery, Moon } from "lucide-react";
 import { JournalEntry } from "@/types/dashboard";
 import { EmptyState } from "@/components/ui/empty-state";
+import { JournalListSkeleton } from "@/components/ui/skeleton-cards";
 
 const MOODS = [
   { value: "great", label: "Great", icon: "😄", color: "green" },
@@ -255,7 +256,7 @@ export default function JournalPage() {
 
       {/* Entries List */}
       {isLoading ? (
-        <div className="text-center py-12 text-gray-500">Loading entries...</div>
+        <JournalListSkeleton count={3} />
       ) : entries?.entries?.length === 0 ? (
         <EmptyState
           icon={BookOpen}

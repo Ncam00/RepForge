@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation"
 import XpProgress from "@/components/XpProgress"
 import { DashboardStats, PersonalRecord, WorkoutSession } from "@/types/dashboard"
 import { SparkLine } from "@/components/ui/sparkline"
+import { StatCardsSkeleton, SessionListSkeleton } from "@/components/ui/skeleton-cards"
 
 interface WeeklyActivity { date: string; sessions: number; volume: number }
 
@@ -61,6 +62,7 @@ export default function DashboardPage() {
       <XpProgress />
 
       {/* Stats Cards */}
+      {isLoading ? <StatCardsSkeleton /> : (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="transition-all duration-200 hover:shadow-lg hover:border-primary/50 cursor-default">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -161,6 +163,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+      )}
 
       {/* Active Split & PRs */}
       <div className="grid gap-4 md:grid-cols-2">

@@ -20,6 +20,7 @@ import { format } from "date-fns";
 import Link from "next/link";
 import { SocialShare, Achievement, SocialUser, LeaderboardEntry } from "@/types/dashboard";
 import { EmptyState } from "@/components/ui/empty-state";
+import { FeedSkeleton } from "@/components/ui/skeleton-cards";
 
 type Tab = "feed" | "following" | "leaderboard" | "achievements";
 
@@ -125,7 +126,7 @@ function FeedTab() {
   });
 
   if (isLoading) {
-    return <div className="text-center py-12 text-gray-500">Loading feed...</div>;
+    return <FeedSkeleton count={3} />;
   }
 
   if (!feed?.shares?.length) {

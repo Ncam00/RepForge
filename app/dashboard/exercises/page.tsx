@@ -9,6 +9,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Plus, Trash2, Search, Dumbbell, Heart, Video, Tag, TrendingUp, BarChart3 } from "lucide-react"
 import Link from "next/link"
 import { EmptyState } from "@/components/ui/empty-state"
+import { CardGridSkeleton } from "@/components/ui/skeleton-cards"
 
 type Exercise = {
   id: string
@@ -416,7 +417,7 @@ export default function ExercisesPage() {
       </Card>
 
       {isLoading ? (
-        <p className="text-muted-foreground">Loading exercises...</p>
+        <CardGridSkeleton cols={3} count={6} />
       ) : exercises.length === 0 ? (
         showFavoritesOnly ? (
           <EmptyState

@@ -15,16 +15,18 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  weights         Weight[]
-  weightGoal      WeightGoal?
-  progressPhotos  ProgressPhoto[]
-  workoutSplits   WorkoutSplit[]
-  sessions        WorkoutSession[]
-  exercises       Exercise[]
-  personalRecords PersonalRecord[]
-  settings        UserSettings?
-  templates       WorkoutTemplate[]
-  JournalEntry    JournalEntry[]
+  weights          Weight[]
+  weightGoal       WeightGoal?
+  progressPhotos   ProgressPhoto[]
+  workoutSplits    WorkoutSplit[]
+  sessions         WorkoutSession[]
+  exercises        Exercise[]
+  personalRecords  PersonalRecord[]
+  settings         UserSettings?
+  templates        WorkoutTemplate[]
+  JournalEntry     JournalEntry[]
+  nutritionEntries NutritionEntry[]
+  nutritionGoal    NutritionGoal?
 
   @@map("users")
 }
@@ -509,4 +511,45 @@ model StepRecord {
   @@unique([userId, date])
   @@index([userId, date])
   @@map("step_records")
+}
+
+model NutritionEntry {
+  id          String   @id @default(cuid())
+  userId      String
+  date        DateTime // start of day (UTC)
+  mealType    String   // breakfast, lunch, dinner, snack
+  foodName    String
+  brand       String?  // optional brand name
+  servingSize Float    // grams
+  calories    Float    // kcal
+  protein     Float    // grams
+  carbs       Float    // grams
+  fat         Float    // grams
+  fiber       Float?   // grams
+  sugar       Float?   // grams
+  sodium      Float?   // mg
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@index([userId, mealType])
+  @@map("nutrition_entries")
+}
+
+model NutritionGoal {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  calories  Float    // kcal
+  protein   Float    // grams
+  carbs     Float    // grams
+  fat       Float    // grams
+  fiber     Float?   // grams
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("nutrition_goals")
 }

@@ -38,27 +38,29 @@ export function DashboardNav({ user }: DashboardNavProps) {
   return (
     <nav className="border-b bg-card">
       <div className="container mx-auto px-4">
-        <div className="grid h-12 items-center" style={{ gridTemplateColumns: "1fr auto 1fr" }}>
-          <Link href="/dashboard" className="text-base font-bold justify-self-start">
+        <div className="flex h-12 items-center gap-4">
+          <Link href="/dashboard" className="text-xl font-bold shrink-0 tracking-tight">
             Rep<span className="text-primary">Forge</span>
           </Link>
-          <div className="flex gap-0.5">
-            {links.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={cn(
-                  "px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap",
-                  pathname === link.href
-                    ? "bg-primary text-primary-foreground"
-                    : "hover:bg-accent hover:text-accent-foreground"
-                )}
-              >
-                {link.label}
-              </Link>
-            ))}
+          <div className="flex-1 flex justify-center min-w-0">
+            <div className="flex gap-0.5 overflow-x-auto scrollbar-none">
+              {links.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={cn(
+                    "px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0",
+                    pathname === link.href
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-accent hover:text-accent-foreground"
+                  )}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
           </div>
-          <div className="flex items-center gap-2 justify-self-end">
+          <div className="flex items-center gap-2 shrink-0">
             <LevelBadge />
             <Button
               variant="ghost"

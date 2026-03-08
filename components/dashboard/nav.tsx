@@ -36,12 +36,12 @@ export function DashboardNav({ user }: DashboardNavProps) {
   return (
     <nav className="border-b bg-card">
       <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
-          <div className="flex items-center gap-8">
-            <Link href="/dashboard" className="text-xl font-bold">
+        <div className="flex h-12 items-center justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
+            <Link href="/dashboard" className="text-base font-bold shrink-0">
               Rep<span className="text-primary">Forge</span>
             </Link>
-            <div className="flex gap-1">
+            <div className="flex gap-0.5 overflow-x-auto scrollbar-none">
               {links.map((link) => {
                 const Icon = link.icon
                 return (
@@ -49,28 +49,28 @@ export function DashboardNav({ user }: DashboardNavProps) {
                     key={link.href}
                     href={link.href}
                     className={cn(
-                      "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
+                      "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0",
                       pathname === link.href
                         ? "bg-primary text-primary-foreground"
                         : "hover:bg-accent hover:text-accent-foreground"
                     )}
                   >
-                    <Icon className="h-4 w-4" />
+                    <Icon className="h-3.5 w-3.5" />
                     {link.label}
                   </Link>
                 )
               })}
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 shrink-0">
             <LevelBadge />
-            <div className="text-sm">
-              <div className="font-medium">{user.name || "User"}</div>
-              <div className="text-muted-foreground">{user.email}</div>
+            <div className="text-xs hidden xl:block">
+              <div className="font-medium leading-none">{user.name || "User"}</div>
+              <div className="text-muted-foreground mt-0.5">{user.email}</div>
             </div>
             <form action="/api/auth/signout" method="POST">
-              <Button variant="ghost" size="icon" type="submit">
-                <LogOut className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="h-8 w-8" type="submit">
+                <LogOut className="h-3.5 w-3.5" />
               </Button>
             </form>
           </div>

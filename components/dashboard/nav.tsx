@@ -2,10 +2,11 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Dumbbell, TrendingUp, Library, History, LogOut, Settings, BookTemplate, BarChart3, Calendar, BookOpen, Users, Camera, Trophy, Utensils } from "lucide-react"
+import { Dumbbell, TrendingUp, Library, History, LogOut, Settings, BookTemplate, BarChart3, Calendar, BookOpen, Users, Camera, Trophy, Utensils, Sun, Moon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import LevelBadge from "@/components/LevelBadge"
 import { cn } from "@/lib/utils"
+import { useTheme } from "next-themes"
 
 interface DashboardNavProps {
   user: {
@@ -16,6 +17,7 @@ interface DashboardNavProps {
 
 export function DashboardNav({ user }: DashboardNavProps) {
   const pathname = usePathname()
+  const { theme, setTheme } = useTheme()
 
   const links = [
     { href: "/dashboard", label: "Overview", icon: Dumbbell },
@@ -64,6 +66,16 @@ export function DashboardNav({ user }: DashboardNavProps) {
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <LevelBadge />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              title="Toggle theme"
+            >
+              <Sun className="h-3.5 w-3.5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+              <Moon className="absolute h-3.5 w-3.5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            </Button>
             <div className="text-xs hidden xl:block">
               <div className="font-medium leading-none">{user.name || "User"}</div>
               <div className="text-muted-foreground mt-0.5">{user.email}</div>

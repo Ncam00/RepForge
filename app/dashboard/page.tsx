@@ -10,12 +10,16 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useRouter } from "next/navigation"
 import XpProgress from "@/components/XpProgress"
 import { DashboardStats, PersonalRecord, WorkoutSession } from "@/types/dashboard"
+import { SparkLine } from "@/components/ui/sparkline"
+
+interface WeeklyActivity { date: string; sessions: number; volume: number }
 
 interface DashboardResponse {
   stats: DashboardStats;
   recentPRs: PersonalRecord[];
   recentSessions: WorkoutSession[];
   weightHistory: Array<{ date: string; weight: number }>;
+  weeklyActivity: WeeklyActivity[];
 }
 
 export default function DashboardPage() {
@@ -34,6 +38,7 @@ export default function DashboardPage() {
   const recentPRs = (data?.recentPRs || []) as PersonalRecord[]
   const recentSessions = (data?.recentSessions || []) as WorkoutSession[]
   const weightHistory = (data?.weightHistory || []) as Array<{ date: string; weight: number }>
+  const weeklyActivity = (data?.weeklyActivity || []) as WeeklyActivity[]
 
   return (
     <div className="space-y-8">
@@ -67,8 +72,11 @@ export default function DashboardPage() {
           <CardContent>
             {stats.currentWeight ? (
               <>
-                <div className="text-2xl font-bold">
-                  {stats.currentWeight} {stats.weightUnit}
+                <div className="flex items-end justify-between">
+                  <div className="text-2xl font-bold">
+                    {stats.currentWeight} {stats.weightUnit}
+                  </div>
+                  <SparkLine data={weightHistory.map(w => w.weight)} color="#8884d8" />
                 </div>
                 {stats.weightChange != null && (
                   <p className="text-xs flex items-center gap-1 text-muted-foreground mt-1">
@@ -77,7 +85,7 @@ export default function DashboardPage() {
                     ) : stats.weightChange < 0 ? (
                       <TrendingDown className="h-3 w-3 text-green-500" />
                     ) : null}
-                    {stats.weightChange > 0 ? "+" : ""}
+                    {stats.weightChange > 0 ? "+" : ""}}
                     {stats.weightChange.toFixed(1)} {stats.weightUnit} (30d)
                   </p>
                 )}
@@ -99,10 +107,15 @@ export default function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.workoutsThisWeek || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {stats.workoutsThisMonth || 0} this month
-            </p>
+            <div className="flex items-end justify-between">
+              <div>
+                <div className="text-2xl font-bold">{stats.workoutsThisWeek || 0}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {stats.workoutsThisMonth || 0} this month
+                </p>
+              </div>
+              <SparkLine data={weeklyActivity.map(d => d.sessions)} color="#3b82f6" />
+            </div>
           </CardContent>
         </Card>
 
@@ -114,10 +127,15 @@ export default function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.streak || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {stats.streak > 0 ? "days in a row 🔥" : "Start today!"}
-            </p>
+            <div className="flex items-end justify-between">
+              <div>
+                <div className="text-2xl font-bold">{stats.streak || 0}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {stats.streak > 0 ? "days in a row 🔥" : "Start today!"}
+                </p>
+              </div>
+              <SparkLine data={weeklyActivity.map(d => d.sessions > 0 ? 1 : 0)} color="#f97316" />
+            </div>
           </CardContent>
         </Card>
 
@@ -129,12 +147,17 @@ export default function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {stats.totalVolume ? `${stats.totalVolume.toLocaleString()}` : "0"}
+            <div className="flex items-end justify-between">
+              <div>
+                <div className="text-2xl font-bold">
+                  {stats.totalVolume ? `${stats.totalVolume.toLocaleString()}` : "0"}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {stats.weightUnit} this week
+                </p>
+              </div>
+              <SparkLine data={weeklyActivity.map(d => d.volume)} color="#a855f7" />
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {stats.weightUnit} this week
-            </p>
           </CardContent>
         </Card>
       </div>

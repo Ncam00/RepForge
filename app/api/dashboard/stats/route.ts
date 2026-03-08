@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDevSession } from "@/lib/dev-auth";
 import prisma from "@/lib/db";
-import { subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
+import { subDays, startOfWeek, endOfWeek, startOfMonth, startOfDay, format } from "date-fns";
 
 export async function GET(req: NextRequest) {
   try {
@@ -172,6 +172,22 @@ export async function GET(req: NextRequest) {
       },
       orderBy: { date: "asc" },
       take: 30,
+    })
+
+    // Build last-7-days activity for sparklines
+    const last7Sessions = await prisma.workoutSession.findMany({
+      where: { userId, completedAt: { not: null }, startedAt: { gte: subDays(now, 6) } },
+      include: { sets: { select: { weight: true, reps: true, isWarmup: true } } },
+    })
+    const weeklyActivity = Array.from({ length: 7 }, (_, i) => {
+      const day = format(startOfDay(subDays(now, 6 - i)), "yyyy-MM-dd")
+      const daySessions = last7Sessions.filter(
+        (s) => format(startOfDay(s.startedAt), "yyyy-MM-dd") === day
+      )
+      const vol = daySessions.reduce((sum, s) =>
+        sum + s.sets.filter((x) => !x.isWarmup).reduce((a, x) => a + (x.weight ?? 0) * (x.reps ?? 0), 0), 0
+      )
+      return { date: day, sessions: daySessions.length, volume: Math.round(vol) }
     });
 
     return NextResponse.json({
@@ -214,6 +230,7 @@ export async function GET(req: NextRequest) {
         bodyFat: w.bodyFat,
         muscleMass: w.muscleMass,
       })),
+      weeklyActivity,
     });
   } catch (error) {
     console.error("Failed to fetch dashboard stats:", error);

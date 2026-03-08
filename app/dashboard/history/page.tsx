@@ -80,6 +80,7 @@ function ActiveWorkout({ session }: { session: WorkoutSession }) {
   const [isWarmup, setIsWarmup] = useState(false)
   const [notes, setNotes] = useState("")
   const [restTimerDuration, setRestTimerDuration] = useState<number | null>(null)
+  const [defaultRestTime, setDefaultRestTime] = useState(90)
   const [prCelebration, setPrCelebration] = useState<{ show: boolean; types: string[]; exerciseName: string }>({
     show: false,
     types: [],
@@ -127,8 +128,8 @@ function ActiveWorkout({ session }: { session: WorkoutSession }) {
         }
       }
       
-      // Start rest timer if a rest time was set
-      if (data.set.restTime) {
+      // Auto-start rest timer for working sets only (restTime=0 for warmup)
+      if (data.set.restTime && data.set.restTime > 0) {
         setRestTimerDuration(data.set.restTime)
       }
     },
@@ -175,7 +176,7 @@ function ActiveWorkout({ session }: { session: WorkoutSession }) {
       weight: weight || undefined,
       reps: reps || undefined,
       rpe: rpe || undefined,
-      restTime: 90, // Default 90 seconds
+      restTime: isWarmup ? 0 : defaultRestTime,
       isWarmup,
       notes: notes || undefined,
     })
@@ -256,14 +257,14 @@ function ActiveWorkout({ session }: { session: WorkoutSession }) {
           {!restTimerDuration && session.sets.length > 0 && (
             <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
               <Timer className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Start rest timer:</span>
+              <span className="text-sm text-muted-foreground">Rest timer:</span>
               <div className="flex gap-1 ml-auto">
                 {[60, 90, 120, 180].map((seconds) => (
                   <Button
                     key={seconds}
-                    variant="outline"
+                    variant={defaultRestTime === seconds ? "default" : "outline"}
                     size="sm"
-                    onClick={() => setRestTimerDuration(seconds)}
+                    onClick={() => { setDefaultRestTime(seconds); setRestTimerDuration(seconds); }}
                     className="h-7 px-2 text-xs"
                   >
                     {seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`}
@@ -380,6 +381,7 @@ function ActiveWorkout({ session }: { session: WorkoutSession }) {
               placeholder="How did the set feel?"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && selectedExerciseId) handleAddSet() }}
               className="h-10"
             />
           </div>
@@ -430,6 +432,7 @@ function ActiveWorkout({ session }: { session: WorkoutSession }) {
                         className="flex items-center justify-between text-sm bg-muted/50 p-2 rounded"
                       >
                         <div className="flex items-center gap-3">
+                          <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
                           <span className="font-medium">Set {set.setNumber}</span>
                           {set.isWarmup && (
                             <span className="text-xs bg-yellow-500/20 text-yellow-700 px-2 py-0.5 rounded">

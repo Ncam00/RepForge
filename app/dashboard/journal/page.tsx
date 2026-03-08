@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Plus, Edit, Trash2, BookOpen, Smile, Frown, Meh, Battery, Moon } from "lucide-react";
 import { JournalEntry } from "@/types/dashboard";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const MOODS = [
   { value: "great", label: "Great", icon: "😄", color: "green" },
@@ -256,10 +257,12 @@ export default function JournalPage() {
       {isLoading ? (
         <div className="text-center py-12 text-gray-500">Loading entries...</div>
       ) : entries?.entries?.length === 0 ? (
-        <div className="bg-white p-12 rounded-lg border text-center">
-          <BookOpen className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-          <p className="text-gray-500">No journal entries yet. Start writing!</p>
-        </div>
+        <EmptyState
+          icon={BookOpen}
+          title="Your journal is empty"
+          description="Track your training mindset, recovery, and progress. Write your first entry to get started."
+          action={{ label: "Write First Entry", onClick: () => setIsCreating(true) }}
+        />
       ) : (
         <div className="space-y-4">
           {entries?.entries?.map((entry: JournalEntry) => {

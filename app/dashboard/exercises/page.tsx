@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Plus, Trash2, Search, Dumbbell, Heart, Video, Tag, TrendingUp, BarChart3 } from "lucide-react"
 import Link from "next/link"
+import { EmptyState } from "@/components/ui/empty-state"
 
 type Exercise = {
   id: string
@@ -417,16 +418,21 @@ export default function ExercisesPage() {
       {isLoading ? (
         <p className="text-muted-foreground">Loading exercises...</p>
       ) : exercises.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Dumbbell className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">
-              {showFavoritesOnly 
-                ? "No favorite exercises yet. Star some exercises to see them here!"
-                : "No exercises found. Try adjusting your filters or add a new exercise."}
-            </p>
-          </CardContent>
-        </Card>
+        showFavoritesOnly ? (
+          <EmptyState
+            icon={Heart}
+            title="No favourite exercises yet"
+            description="Star exercises you love to pin them here for quick access."
+            action={{ label: "Browse All Exercises", onClick: () => setShowFavoritesOnly(false) }}
+          />
+        ) : (
+          <EmptyState
+            icon={Dumbbell}
+            title="No exercises found"
+            description="Try adjusting your filters, or add a custom exercise to your library."
+            action={{ label: "Add Exercise", onClick: () => setIsCreating(true) }}
+          />
+        )
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {exercises.map((exercise) => (

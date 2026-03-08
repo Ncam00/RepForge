@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Copy, Play, Trash2, Edit, Clock, X } from "lucide-react";
+import { Plus, Copy, Play, Trash2, Edit, Clock, X, LayoutTemplate, Globe } from "lucide-react";
 import { WorkoutTemplate, Exercise, TemplateExercise } from "@/types/dashboard";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface CreateTemplateData {
   name: string;
@@ -534,13 +535,22 @@ export default function TemplatesPage() {
           Loading templates...
         </div>
       ) : templates?.length === 0 ? (
-        <div className="bg-white p-12 rounded-lg border text-center">
-          <p className="text-gray-500">
-            {showPublic
-              ? "No public templates available yet"
-              : "No templates yet. Create your first template to get started!"}
-          </p>
-        </div>
+        showPublic ? (
+          <EmptyState
+            icon={Globe}
+            title="No public templates yet"
+            description="Be the first to share a workout template with the community."
+            action={{ label: "Create Template", onClick: () => { setShowPublic(false); setIsCreating(true); } }}
+          />
+        ) : (
+          <EmptyState
+            icon={LayoutTemplate}
+            title="No templates yet"
+            description="Create reusable workout templates to start your sessions faster."
+            action={{ label: "Create Template", onClick: () => setIsCreating(true) }}
+            secondaryAction={{ label: "Browse Public Templates", onClick: () => setShowPublic(true) }}
+          />
+        )
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {templates?.map((template: WorkoutTemplate) => (

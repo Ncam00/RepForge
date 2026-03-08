@@ -12,6 +12,7 @@ import { ExerciseSet, WorkoutSession, Exercise } from "@/types/dashboard"
 import OverloadSuggestionCard from "@/components/OverloadSuggestion"
 import { PRCelebration } from "@/components/ui/pr-celebration"
 import { RestTimerWidget } from "@/components/ui/rest-timer"
+import { EmptyState } from "@/components/ui/empty-state"
 
 interface SetData {
   exerciseId: string;
@@ -532,17 +533,13 @@ export default function HistoryPage() {
       {isLoading ? (
         <p className="text-muted-foreground">Loading sessions...</p>
       ) : completedSessions.length === 0 && !activeSession ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Dumbbell className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground mb-2">
-              No workout sessions recorded yet
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Start your first workout to begin tracking your progress
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={Dumbbell}
+          title="No workouts yet"
+          description="Log your first workout to start tracking your progress and see your growth over time."
+          action={{ label: "Start Workout", onClick: () => startSessionMutation.mutate() }}
+          secondaryAction={{ label: "Browse Templates", href: "/dashboard/templates" }}
+        />
       ) : (
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">Completed Workouts</h2>

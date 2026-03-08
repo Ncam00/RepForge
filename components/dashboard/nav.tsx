@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Dumbbell, TrendingUp, Library, History, LogOut, Settings, BookTemplate, BarChart3, Calendar, BookOpen, Users, Camera, Trophy, Utensils, Sun, Moon } from "lucide-react"
+import { LogOut, Settings, Sun, Moon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import LevelBadge from "@/components/LevelBadge"
 import { cn } from "@/lib/utils"
@@ -20,19 +20,19 @@ export function DashboardNav({ user }: DashboardNavProps) {
   const { theme, setTheme } = useTheme()
 
   const links = [
-    { href: "/dashboard", label: "Overview", icon: Dumbbell },
-    { href: "/dashboard/weight", label: "Weight", icon: TrendingUp },
-    { href: "/dashboard/photos", label: "Photos", icon: Camera },
-    { href: "/dashboard/splits", label: "Training", icon: Library },
-    { href: "/dashboard/templates", label: "Templates", icon: BookTemplate },
-    { href: "/dashboard/history", label: "History", icon: History },
-    { href: "/dashboard/prs", label: "PRs", icon: Trophy },
-    { href: "/dashboard/calendar", label: "Calendar", icon: Calendar },
-    { href: "/dashboard/journal", label: "Journal", icon: BookOpen },
-    { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
-    { href: "/dashboard/nutrition", label: "Nutrition", icon: Utensils },
-    { href: "/dashboard/social", label: "Social", icon: Users },
-    { href: "/dashboard/settings", label: "Settings", icon: Settings },
+    { href: "/dashboard", label: "Overview" },
+    { href: "/dashboard/weight", label: "Weight" },
+    { href: "/dashboard/photos", label: "Photos" },
+    { href: "/dashboard/splits", label: "Training" },
+    { href: "/dashboard/templates", label: "Templates" },
+    { href: "/dashboard/history", label: "History" },
+    { href: "/dashboard/prs", label: "PRs" },
+    { href: "/dashboard/calendar", label: "Calendar" },
+    { href: "/dashboard/journal", label: "Journal" },
+    { href: "/dashboard/analytics", label: "Analytics" },
+    { href: "/dashboard/nutrition", label: "Nutrition" },
+    { href: "/dashboard/social", label: "Social" },
+    { href: "/dashboard/settings", label: "Settings" },
   ]
 
   return (
@@ -43,25 +43,21 @@ export function DashboardNav({ user }: DashboardNavProps) {
             <Link href="/dashboard" className="text-base font-bold shrink-0">
               Rep<span className="text-primary">Forge</span>
             </Link>
-            <div className="flex gap-0.5 overflow-x-auto scrollbar-none">
-              {links.map((link) => {
-                const Icon = link.icon
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={cn(
-                      "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0",
-                      pathname === link.href
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-accent hover:text-accent-foreground"
-                    )}
-                  >
-                    <Icon className="h-3.5 w-3.5" />
-                    {link.label}
-                  </Link>
-                )
-              })}
+            <div className="flex gap-0.5">
+              {links.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={cn(
+                    "px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap",
+                    pathname === link.href
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-accent hover:text-accent-foreground"
+                  )}
+                >
+                  {link.label}
+                </Link>
+              ))}
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">

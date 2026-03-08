@@ -38,3 +38,4 @@ next-env.d.ts
 # Database
 prisma/*.db
 prisma/*.db-journal
+prisma/dev.db.backup

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area, AreaChart, ComposedChart, Bar, BarChart } from "recharts"
 import { format, subDays, subMonths, differenceInDays } from "date-fns"
-import { Plus, Trash2, Download, Target, TrendingUp, TrendingDown, Camera, Image as ImageIcon, X, Check } from "lucide-react"
+import { Plus, Trash2, Download, Target, TrendingUp, TrendingDown, Camera, Image as ImageIcon, X, Check, Loader2 } from "lucide-react"
 import { Weight } from "@/types/dashboard"
 
 interface WeightGoal {
@@ -55,6 +55,8 @@ export default function WeightPage() {
   const [startingWeight, setStartingWeight] = useState("")
   const [chartMetric, setChartMetric] = useState<"weight" | "bodyFat" | "muscleMass">("weight")
   const [goalSuccessMessage, setGoalSuccessMessage] = useState<string | null>(null)
+  const [goalJustSet, setGoalJustSet] = useState(false)
+  const successBannerRef = useRef<HTMLDivElement>(null)
 
   // Auto-dismiss success message
   useEffect(() => {
@@ -116,11 +118,16 @@ export default function WeightPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["weight-goal"] })
-      setShowGoalForm(false)
-      setTargetWeight("")
-      setTargetDate("")
-      setStartingWeight("")
+      setGoalJustSet(true)
       setGoalSuccessMessage("Goal set successfully! Track your progress below.")
+      setTimeout(() => {
+        setGoalJustSet(false)
+        setShowGoalForm(false)
+        setTargetWeight("")
+        setTargetDate("")
+        setStartingWeight("")
+        setTimeout(() => successBannerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50)
+      }, 1200)
     },
   })
 
@@ -366,7 +373,7 @@ export default function WeightPage() {
 
       {/* Success Message */}
       {goalSuccessMessage && (
-        <div className="flex items-center gap-3 p-4 bg-green-500/10 border border-green-500/30 rounded-lg animate-in slide-in-from-top-2 duration-300">
+        <div ref={successBannerRef} className="flex items-center gap-3 p-4 bg-green-500/10 border border-green-500/30 rounded-lg animate-in slide-in-from-top-2 duration-300">
           <div className="flex-shrink-0 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
             <Check className="h-5 w-5 text-white" />
           </div>
@@ -424,7 +431,7 @@ export default function WeightPage() {
         </Card>
       )}
 
-      {(!goal || showGoalForm) && (
+      {(!goal || showGoalForm || goalJustSet) && (
         <Card>
           <CardHeader>
             <CardTitle>Set Weight Goal</CardTitle>
@@ -471,11 +478,17 @@ export default function WeightPage() {
               <div className="flex items-end">
                 <Button
                   onClick={handleSetGoal}
-                  disabled={!targetWeight || (!startingWeight && !latestWeight) || setGoalMutation.isPending}
-                  className="w-full"
+                  disabled={!targetWeight || (!startingWeight && !latestWeight) || setGoalMutation.isPending || goalJustSet}
+                  className={`w-full transition-colors ${goalJustSet ? "bg-green-600 hover:bg-green-600 text-white" : ""}`}
                 >
-                  <Target className="mr-2 h-4 w-4" />
-                  Set Goal
+                  {setGoalMutation.isPending ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : goalJustSet ? (
+                    <Check className="mr-2 h-4 w-4" />
+                  ) : (
+                    <Target className="mr-2 h-4 w-4" />
+                  )}
+                  {setGoalMutation.isPending ? "Saving..." : goalJustSet ? "Goal Set!" : "Set Goal"}
                 </Button>
               </div>
             </div>
